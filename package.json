@@ -1,6 +1,6 @@
 {
-  "name": "wxt-svelte-starter",
-  "description": "manifest.json description",
+  "name": "sidestep",
+  "description": "A gentle focus tool that redirects distracting sites to your own goals.",
   "private": true,
   "version": "0.0.0",
   "type": "module",
