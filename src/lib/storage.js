@@ -1,0 +1,36 @@
+// The data model — every piece of saved state is DEFINED HERE, in one place.
+//
+// We use WXT's `storage.defineItem`, which wraps Chrome's key-value store
+// (`chrome.storage.local`). Each item gets a key and a `fallback` (the default
+// value returned when nothing has been saved yet). The rest of the app imports
+// these items and calls `.getValue()`, `.setValue()`, and `.watch()`.
+//
+// Keys are prefixed with `local:` to say "store this on this machine".
+import { storage } from '#imports';
+
+const MINUTE = 60 * 1000;
+
+// User configuration. (Stage 1 only really uses focus/break minutes; the rest
+// is here so later stages have a home.)
+export const settings = storage.defineItem('local:settings', {
+  fallback: {
+    distractingSites: ['youtube.com', 'instagram.com', 'x.com', 'reddit.com'],
+    focusMinutes: 25,
+    breakMinutes: 5,
+    linkOrder: 'sequential', // 'sequential' (to-do style) | 'random'
+  },
+});
+
+// The authoritative timer state.
+//   mode        : 'focus' | 'break'  — which kind of session
+//   status      : 'idle' | 'running' | 'paused'
+//   endsAt      : timestamp (ms) when the running session ends, else null
+//   remainingMs : time left, used while paused/idle so resume is exact
+export const timer = storage.defineItem('local:timer', {
+  fallback: {
+    mode: 'focus',
+    status: 'idle',
+    endsAt: null,
+    remainingMs: 25 * MINUTE,
+  },
+});
