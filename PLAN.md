@@ -30,9 +30,10 @@ gentle enough not to be stressful in itself.
 
 Instead of **blocking** a distraction, **substitute** it.
 
-When the user reaches for YouTube, we don't put up a wall. We swap that page for something
-*they* decided was useful — a video they need to watch, a problem they want to solve. The same
-impulse that opened YouTube now lands them on their own goal.
+When the user reaches for a site they've chosen to block — whichever sites those are — we don't
+put up a wall. We swap that page for something *they* decided was useful: a video they need to
+watch, a problem they want to solve. The same impulse that opened the distraction now lands them
+on their own goal.
 
 Substitution redirects the impulse instead of fighting it, and a calm companion (the bunny)
 encourages instead of shaming. That is the whole philosophy: **substitute and support, don't
@@ -53,31 +54,35 @@ Core features (the heart of the product):
 
 1. **Pomodoro timer** — focus / break sessions, kept running in the background even when the
    popup is closed.
-2. **Substitution engine** — during a *focus* session, opening a distracting site redirects the
-   tab to a useful link from the user's **current topic**.
+2. **Substitution engine** — during a *focus* session, opening **any site on the user's own block
+   list** redirects the tab to a useful link from the user's **current topic**. The engine treats
+   every blocked site the same way; none is special-cased.
 3. **Topic-wise link lists** — useful links live in topic "folders". The "What are you
    exploring?" prompt sets the *current topic*; if none is given, links go to **General**.
    Within a topic, links are served **in order, like a to-do list** (loops back to the start at
    the end). *(Configurable; random is a possible later option.)*
 4. **Two ways to add links:**
    - **Paste a URL** directly (choose a topic; defaults to General).
-   - **Capture the current tab** — when the timer is **off** and the user opens the extension
-     while on a YouTube video, detect it and offer "Save this to a list". (Capture lives in the
-     off-state because while the timer is *on*, that tab would already have been redirected away.)
-5. **Freedom window (per-site allowance)** — sometimes a distracting site is genuinely needed
-   (a lecture, a tutorial). The user can allow **one** site for a chosen time:
+   - **Capture the current tab** — when the timer is **off**, the user can open the extension on
+     any page worth keeping and tap "Save this page to a list". (Capture lives in the off-state
+     because while the timer is *on*, a blocked tab would already have been redirected away.)
+5. **Freedom window (per-site allowance)** — sometimes a blocked site is genuinely needed
+   (a lecture, a tutorial). The user can allow **one** of their blocked sites for a chosen time:
    **5 min · 15 min · 30 min · until I turn it off**. During the window that one site is not
-   redirected; the *other* distracting sites stay protected. The popup always shows a visible
-   status (e.g. "YouTube: free for 12 more min" / "free, no time limit — Turn off") so an
-   allowance is never silently left on. Picking a duration on purpose is intentional friction —
-   it keeps this from becoming a mindless "skip" button.
+   redirected; every *other* site on the block list stays protected. The popup always shows a
+   visible status (e.g. "youtube.com: free for 12 more min" / "free, no time limit — Turn off")
+   so an allowance is never silently left on. Picking a duration on purpose is intentional
+   friction — it keeps this from becoming a mindless "skip" button.
 6. **Escape hatches:** (a) allow one site for a time *(above)*, (b) pause the whole timer.
 7. **Bunny pet + health bar** — a pixel bunny that gets happier the longer you focus and sad
    when idle a long time (eats grass, art to be illustrated later). This is a gentle
    gamification *skin*, not the core — built **last**.
 
-**Default distracting sites:** YouTube, Instagram, X (Twitter), Reddit. All lists are fully
-user-editable. (LeetCode is treated as a useful-link *target*, not a distraction.)
+**The block list belongs to the user.** They add whichever sites pull *them* away — as many as
+they like — and remove any at will. Nothing is hard-coded: the engine redirects exactly what's on
+the user's list and nothing else. We ship a few optional starting suggestions (YouTube, Instagram,
+X, Reddit) purely as a convenience to delete or keep. (A site like LeetCode would more likely be a
+useful-link *target* than a block, but even that is the user's call.)
 
 ---
 
@@ -105,8 +110,8 @@ topics: {
 }
 currentTopic: "General"
 nextLinkIndex: { "General": 0, "DSA prep": 2 }   // for in-order serving
-distractingSites: ["youtube.com", "instagram.com", "x.com", "reddit.com"]
-allowances: { "youtube.com": <expiry timestamp | "forever"> }
+distractingSites: ["youtube.com", "instagram.com", ...]   // the user's own list — any sites
+allowances: { "<some blocked site>": <expiry timestamp | "forever"> }
 timer: { mode: "focus" | "break", running: bool, endTime, remaining }
 bunny: { happiness, lastActive }
 ```
@@ -123,7 +128,7 @@ When a tab navigates to a site:
 ### Permissions we'll request (and why)
 
 - `storage` — save the lists, settings, and state.
-- `tabs` — read the current tab's address (to detect distracting sites and the YouTube video to capture).
+- `tabs` — read the current tab's address (to recognise a blocked site and to capture the current page when the user saves it).
 - `webNavigation` — notice when a tab is heading to a new page, so we can redirect early.
 - `alarms` — reliably end timer sessions and freedom windows.
 - `notifications` — tell the user when a focus session ends.
@@ -141,11 +146,11 @@ Built so there's something runnable early; the impressive mechanic comes before 
   kept alive by the background worker + alarms. *Deliverable: a real timer.*
 - **Stage 2 — Substitution engine + topic lists.** Storage for distracting sites and topic-based
   useful links; the redirect logic; the "What are you exploring?" topic prompt.
-  *Deliverable: opening YouTube during focus sends you to your goal. (The wow moment.)*
+  *Deliverable: opening any site on your block list during focus sends you to your goal. (The wow moment.)*
 - **Stage 3 — Freedom window.** Per-site timed allowance (5/15/30/until-off) on the redirect
   landing page and in the popup, with visible status. *Deliverable: escape hatch works.*
-- **Stage 4 — Capture current tab.** When timer is off and you're on a YouTube video, "Save this
-  to a list" button. *Deliverable: easy link adding.*
+- **Stage 4 — Capture current tab.** When the timer is off, a "Save this page to a list" button for
+  whatever site you're currently on. *Deliverable: easy link adding.*
 - **Stage 5 — Bunny + health bar.** Placeholder art first, then the user's pixel art; mood reacts
   to focus/idle time. *Deliverable: the charming skin.*
 

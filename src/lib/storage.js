@@ -34,3 +34,17 @@ export const timer = storage.defineItem('local:timer', {
     remainingMs: 25 * MINUTE,
   },
 });
+
+// The user's own useful links, grouped by topic (a folder).
+//   currentTopic : the topic we're exploring right now ("What are you exploring?")
+//   topics       : { topicName: [url, url, ...] }  — the links in each folder
+//   cursor       : which link to serve next (sequential, to-do style)
+// When a distracting site is intercepted, we redirect to the next link in the
+// CURRENT topic's folder. If no topic is chosen, everything lives in "General".
+export const lists = storage.defineItem('local:lists', {
+  fallback: {
+    currentTopic: 'General',
+    topics: { General: [] },
+    cursor: 0,
+  },
+});
