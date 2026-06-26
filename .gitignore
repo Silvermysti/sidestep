@@ -24,3 +24,9 @@ web-ext.config.ts
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code local config (machine-specific, not for sharing)
+.claude/
+
+# Stray archive — a zip of the project should not live inside the project
+project.zip
