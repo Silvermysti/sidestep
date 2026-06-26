@@ -1,18 +1,47 @@
-/* Full-page styles for the nudge (redirect landing) page. */
+/* Full-page styles for the nudge (redirect landing) page. Shares the popup's
+   warm, soft look so the whole product feels like one calm place. */
+@font-face { font-family: 'Nunito'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/nunito-400.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/nunito-600.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/nunito-700.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-style: normal; font-weight: 800; font-display: swap; src: url('/fonts/nunito-800.woff2') format('woff2'); }
+@font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/fredoka-500.woff2') format('woff2'); }
+@font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/fredoka-600.woff2') format('woff2'); }
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --bg: #FAF5EE;
+  --surface: #FFFFFF;
+  --surface-2: #F4ECDF;
+  --surface-3: #EFE6D5;
+  --line: #ECE3D4;
+  --ink: #463F36;
+  --ink-soft: #8E8171;
+  --ink-faint: #B9AD9B;
+
+  --accent: #6FAC8C;        /* sage — same focus accent as the popup */
+  --accent-deep: #3E7A5C;
+  --accent-tint: #E8F1EB;
+
+  --shadow-sm: 0 1px 3px rgba(78, 62, 40, 0.07);
+  --shadow: 0 14px 40px rgba(78, 62, 40, 0.12), 0 3px 9px rgba(78, 62, 40, 0.05);
+
+  --r-lg: 22px;
+  --r: 14px;
+  --r-sm: 10px;
+
+  font-family: 'Nunito', ui-rounded, system-ui, -apple-system, sans-serif;
   line-height: 1.5;
-  color-scheme: dark;
+  color-scheme: light;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 * { box-sizing: border-box; }
-
 html, body { margin: 0; min-height: 100vh; }
 
 body {
-  background: radial-gradient(1200px 600px at 50% -10%, #1d2433, #16181d 60%);
-  color: #e8eaed;
+  color: var(--ink);
+  background:
+    radial-gradient(150% 80% at 50% -10%, #FFFDF9 0%, var(--bg) 55%);
   display: flex;
   align-items: center;
   justify-content: center;
