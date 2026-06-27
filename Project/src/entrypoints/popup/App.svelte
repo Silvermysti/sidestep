@@ -5,6 +5,10 @@
   import { durationMs, formatMs } from '@/lib/timer';
   import { currentLinks, hostnameOf, linkTitle, linkUrl, normalizeUrl } from '@/lib/sites';
 
+  // Which top tab is showing. The popup is now split into pages instead of one
+  // long scroll; this single piece of state decides which page is visible.
+  let tab = $state('focus');
+
   // Local copies of saved state, kept in sync with `.watch()`.
   let t = $state(null);
   let s = $state(null);
@@ -113,21 +117,40 @@
   async function removeSite(host) {
     await settings.setValue({ ...s, distractingSites: sites.filter((x) => x !== host) });
   }
+
+  // --- Settings: session lengths ---
+  // Clamp to a sane range, save, and (if the timer is sitting idle) reset so the
+  // clock immediately shows the new length instead of the old one.
+  async function setMinutes(field, value) {
+    const max = field === 'focusMinutes' ? 90 : 30;
+    const v = Math.max(1, Math.min(max, value));
+    await settings.setValue({ ...s, [field]: v });
+    if (t.status === 'idle') send('reset');
+  }
 </script>
 
 <main class:focus={isFocus} class:break={!isFocus}>
-  <div class="brand-wrap">
-    <svg class="sprout" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-      <path d="M12 22c-.55 0-1-.45-1-1v-6.2c0-.55.45-1 1-1s1 .45 1 1V21c0 .55-.45 1-1 1Z"/>
-      <path d="M10.8 14.2c-3.4 0-6.2-2.8-6.2-6.2 0-.6.5-1 1-1 3.4 0 6.2 2.8 6.2 6.2 0 .6-.5 1-1 1Z"/>
-      <path d="M13.2 12.2c0-3.4 2.8-6.2 6.2-6.2.6 0 1 .5 1 1 0 3.4-2.8 6.2-6.2 6.2-.6 0-1-.5-1-1Z"/>
-    </svg>
-    <span class="brand">Sidestep</span>
-    <span class="tag">stay on your own path</span>
-  </div>
+  <header class="top">
+    <div class="brand-wrap">
+      <svg class="sprout" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+        <path d="M12 22c-.55 0-1-.45-1-1v-6.2c0-.55.45-1 1-1s1 .45 1 1V21c0 .55-.45 1-1 1Z"/>
+        <path d="M10.8 14.2c-3.4 0-6.2-2.8-6.2-6.2 0-.6.5-1 1-1 3.4 0 6.2 2.8 6.2 6.2 0 .6-.5 1-1 1Z"/>
+        <path d="M13.2 12.2c0-3.4 2.8-6.2 6.2-6.2.6 0 1 .5 1 1 0 3.4-2.8 6.2-6.2 6.2-.6 0-1-.5-1-1Z"/>
+      </svg>
+      <span class="brand">Sidestep</span>
+    </div>
+
+    <nav class="tabs" role="tablist">
+      <button class:active={tab === 'focus'} onclick={() => (tab = 'focus')}>Focus</button>
+      <button class:active={tab === 'lists'} onclick={() => (tab = 'lists')}>Lists</button>
+      <button class:active={tab === 'blocked'} onclick={() => (tab = 'blocked')}>Blocked</button>
+      <button class:active={tab === 'settings'} onclick={() => (tab = 'settings')}>Settings</button>
+    </nav>
+  </header>
 
   {#if t && s && l}
-    <section class="card timer-card">
+    <!-- ===================== FOCUS PAGE ===================== -->
+    {#if tab === 'focus'}
       <div class="seg" role="tablist">
         <button
           class:active={isFocus}
@@ -141,13 +164,30 @@
         >Break</button>
       </div>
 
-      <div class="clock">
-        <div class="time">{formatMs(remaining)}</div>
-        <div class="status">
-          {#if t.status === 'running'}{isFocus ? 'Focusing' : 'On a break'}
-          {:else if t.status === 'paused'}Paused
-          {:else}Ready when you are{/if}
+      <!-- The bunny's home. Empty for now — a faint silhouette marks where the
+           pet (the gamification layer, built last) will live and react. -->
+      <div class="habitat">
+        <span class="habitat-topic">{topic}</span>
+
+        <div class="hud">
+          <div class="time">{formatMs(remaining)}</div>
+          <div class="status">
+            {#if t.status === 'running'}{isFocus ? 'Focusing' : 'On a break'}
+            {:else if t.status === 'paused'}Paused
+            {:else}Ready when you are{/if}
+          </div>
         </div>
+
+        <div class="bunny-slot">
+          <svg class="bunny" viewBox="0 0 64 64" width="62" height="62" fill="currentColor" aria-hidden="true">
+            <ellipse cx="24" cy="15" rx="5" ry="13"/>
+            <ellipse cx="40" cy="15" rx="5" ry="13"/>
+            <circle cx="32" cy="40" r="17"/>
+          </svg>
+          <span class="bunny-label">Your bunny grows here as you focus</span>
+        </div>
+
+        <div class="ground"></div>
       </div>
 
       <div class="bar"><div class="fill" style="width: {progress * 100}%"></div></div>
@@ -162,99 +202,132 @@
         {/if}
         <button class="ghost" disabled={t.status === 'idle'} onclick={() => send('reset')}>Reset</button>
       </div>
-    </section>
+    {/if}
 
-    <section class="card">
-      <div class="card-head">
-        <span class="card-label">Exploring</span>
-        <span class="topic-pill">{topic}</span>
-      </div>
+    <!-- ===================== LISTS PAGE ===================== -->
+    {#if tab === 'lists'}
+      <section class="card">
+        <div class="card-head">
+          <span class="card-label">Exploring</span>
+          <span class="topic-pill">{topic}</span>
+        </div>
 
-      <div class="row">
+        <div class="row">
+          <input
+            class="inp"
+            placeholder="Change topic…"
+            bind:value={topicDraft}
+            onkeydown={(e) => e.key === 'Enter' && setTopic()}
+          />
+          <button class="mini" onclick={setTopic}>Set</button>
+        </div>
+
+        <div class="row">
+          <input
+            class="inp"
+            placeholder="Paste a useful link"
+            bind:value={linkDraft}
+            onkeydown={(e) => e.key === 'Enter' && addLink(linkDraft, titleDraft)}
+          />
+          <button class="mini" onclick={() => addLink(linkDraft, titleDraft)}>Add</button>
+        </div>
         <input
-          class="inp"
-          placeholder="Change topic…"
-          bind:value={topicDraft}
-          onkeydown={(e) => e.key === 'Enter' && setTopic()}
-        />
-        <button class="mini" onclick={setTopic}>Set</button>
-      </div>
-
-      <div class="row">
-        <input
-          class="inp"
-          placeholder="Paste a useful link"
-          bind:value={linkDraft}
+          class="inp full"
+          placeholder="Title (optional)"
+          bind:value={titleDraft}
           onkeydown={(e) => e.key === 'Enter' && addLink(linkDraft, titleDraft)}
         />
-        <button class="mini" onclick={() => addLink(linkDraft, titleDraft)}>Add</button>
-      </div>
-      <input
-        class="inp full"
-        placeholder="Title (optional)"
-        bind:value={titleDraft}
-        onkeydown={(e) => e.key === 'Enter' && addLink(linkDraft, titleDraft)}
-      />
 
-      <button class="soft-btn" onclick={saveCurrentPage}>
-        <span class="plus">＋</span> Save this page to “{topic}”
-      </button>
+        <button class="soft-btn" onclick={saveCurrentPage}>
+          <span class="plus">＋</span> Save this page to “{topic}”
+        </button>
 
-      {#if links.length}
-        <ul class="list">
-          {#each links as link, i}
-            <li>
-              <div class="link-main">
-                {#if linkTitle(link)}
-                  <span class="link-title">{linkTitle(link)}</span>
-                {/if}
-                <span class="link-url" title={linkUrl(link)}>{prettyUrl(linkUrl(link))}</span>
-              </div>
-              <button class="x" onclick={() => removeLink(i)} aria-label="Remove link">×</button>
-            </li>
-          {/each}
-        </ul>
-      {:else}
-        <div class="empty">No links yet. Add a few you actually want to get to.</div>
-      {/if}
-    </section>
+        {#if links.length}
+          <ul class="list">
+            {#each links as link, i}
+              <li>
+                <div class="link-main">
+                  {#if linkTitle(link)}
+                    <span class="link-title">{linkTitle(link)}</span>
+                  {/if}
+                  <span class="link-url" title={linkUrl(link)}>{prettyUrl(linkUrl(link))}</span>
+                </div>
+                <button class="x" onclick={() => removeLink(i)} aria-label="Remove link">×</button>
+              </li>
+            {/each}
+          </ul>
+        {:else}
+          <div class="empty">No links yet. Add a few you actually want to get to.</div>
+        {/if}
+      </section>
+    {/if}
 
-    <section class="card">
-      <div class="card-head">
-        <span class="card-label">Sites to redirect</span>
-      </div>
-      <div class="row">
-        <input
-          class="inp"
-          placeholder="e.g. youtube.com"
-          bind:value={siteDraft}
-          onkeydown={(e) => e.key === 'Enter' && addSite()}
-        />
-        <button class="mini" onclick={addSite}>Add</button>
-      </div>
-      {#if sites.length}
-        <ul class="chips">
-          {#each sites as host}
-            <li class="chip">
-              {host}
-              <button class="x" onclick={() => removeSite(host)} aria-label="Remove site">×</button>
-            </li>
-          {/each}
-        </ul>
-      {:else}
-        <div class="empty">No sites yet — add the ones that pull you away.</div>
-      {/if}
-    </section>
+    <!-- ===================== BLOCKED PAGE ===================== -->
+    {#if tab === 'blocked'}
+      <section class="card">
+        <div class="card-head">
+          <span class="card-label">Sites to redirect</span>
+        </div>
+        <div class="row">
+          <input
+            class="inp"
+            placeholder="e.g. youtube.com"
+            bind:value={siteDraft}
+            onkeydown={(e) => e.key === 'Enter' && addSite()}
+          />
+          <button class="mini" onclick={addSite}>Add</button>
+        </div>
+        {#if sites.length}
+          <ul class="chips">
+            {#each sites as host}
+              <li class="chip">
+                {host}
+                <button class="x" onclick={() => removeSite(host)} aria-label="Remove site">×</button>
+              </li>
+            {/each}
+          </ul>
+        {:else}
+          <div class="empty">No sites yet — add the ones that pull you away.</div>
+        {/if}
+      </section>
+    {/if}
+
+    <!-- ===================== SETTINGS PAGE ===================== -->
+    {#if tab === 'settings'}
+      <section class="card">
+        <div class="card-head">
+          <span class="card-label">Session lengths</span>
+        </div>
+
+        <div class="setting">
+          <span class="setting-name">Focus</span>
+          <div class="stepper">
+            <button onclick={() => setMinutes('focusMinutes', s.focusMinutes - 5)} aria-label="Less focus time">−</button>
+            <span class="num">{s.focusMinutes}<small>min</small></span>
+            <button onclick={() => setMinutes('focusMinutes', s.focusMinutes + 5)} aria-label="More focus time">+</button>
+          </div>
+        </div>
+
+        <div class="setting">
+          <span class="setting-name">Break</span>
+          <div class="stepper">
+            <button onclick={() => setMinutes('breakMinutes', s.breakMinutes - 1)} aria-label="Less break time">−</button>
+            <span class="num">{s.breakMinutes}<small>min</small></span>
+            <button onclick={() => setMinutes('breakMinutes', s.breakMinutes + 1)} aria-label="More break time">+</button>
+          </div>
+        </div>
+
+        <p class="hint">Changes apply the next time you start (or reset) a session.</p>
+      </section>
+    {/if}
   {:else}
-    <section class="card timer-card">
-      <div class="clock"><div class="time">--:--</div></div>
-    </section>
+    <div class="habitat"><div class="hud"><div class="time">--:--</div></div></div>
   {/if}
 </main>
 
 <style>
   main {
-    padding: 14px 14px 18px;
+    padding: 12px 14px 16px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -266,8 +339,9 @@
     --accent-tint: #F7EDD9;
   }
 
-  /* Header */
-  .brand-wrap { display: flex; align-items: center; gap: 7px; padding: 2px 4px; }
+  /* Header: brand + top tab bar */
+  .top { display: flex; flex-direction: column; gap: 10px; }
+  .brand-wrap { display: flex; align-items: center; gap: 7px; padding: 2px 2px 0; }
   .sprout { color: var(--accent); flex: none; transition: color 0.3s ease; }
   .brand {
     font-family: 'Fredoka', 'Nunito', sans-serif;
@@ -276,9 +350,30 @@
     letter-spacing: 0.2px;
     color: var(--ink);
   }
-  .tag { margin-left: auto; font-size: 11px; color: var(--ink-soft); }
 
-  /* Cards */
+  .tabs {
+    display: flex;
+    gap: 3px;
+    background: var(--surface-2);
+    padding: 4px;
+    border-radius: var(--r);
+  }
+  .tabs button {
+    flex: 1;
+    border: 0;
+    border-radius: 9px;
+    padding: 7px 0;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  }
+  .tabs button.active { background: var(--surface); color: var(--accent-deep); box-shadow: var(--shadow-sm); }
+
+  /* Cards (Lists / Blocked / Settings) */
   .card {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -289,7 +384,6 @@
     flex-direction: column;
     gap: 11px;
   }
-  .timer-card { gap: 14px; padding-bottom: 17px; }
 
   .card-head { display: flex; align-items: center; gap: 8px; }
   .card-label { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
@@ -331,18 +425,76 @@
   .seg button.active { background: var(--surface); color: var(--accent-deep); box-shadow: var(--shadow-sm); }
   .seg button:disabled { cursor: default; }
 
-  /* Clock */
-  .clock { text-align: center; }
+  /* The bunny habitat — the hero of the Focus page. A soft meadow: cream "sky"
+     fading to a tinted "grass" band at the bottom. The clock floats in the sky;
+     the bunny (placeholder for now) sits on the grass. */
+  .habitat {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, #FFFDFA 0%, var(--accent-tint) 100%);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: background 0.3s ease;
+  }
+  .habitat-topic {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-deep);
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+    backdrop-filter: blur(2px);
+    padding: 3px 10px;
+    border-radius: 999px;
+    max-width: 55%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Timer "heads-up display" floating near the top of the habitat. */
+  .hud { position: absolute; top: 26px; left: 0; right: 0; text-align: center; z-index: 1; }
   .time {
     font-family: 'Fredoka', 'Nunito', sans-serif;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
-    font-size: 58px;
+    font-size: 50px;
     line-height: 1;
     letter-spacing: 1px;
     color: var(--ink);
   }
-  .status { margin-top: 7px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+  .status { margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+
+  /* Reserved bunny area, sitting on the grass. */
+  .bunny-slot {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 16px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .bunny { color: var(--accent); opacity: 0.28; }
+  .bunny-label { font-size: 11.5px; font-weight: 600; color: var(--accent-deep); opacity: 0.7; }
+
+  /* The grass band. */
+  .ground {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 30%;
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    border-top: 2px solid color-mix(in srgb, var(--accent) 34%, transparent);
+  }
 
   /* Progress */
   .bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
@@ -467,4 +619,34 @@
   .x:hover { color: #cf6b5e; }
 
   .empty { font-size: 12.5px; color: var(--ink-faint); padding: 2px 0; }
+
+  /* Settings */
+  .setting { display: flex; align-items: center; justify-content: space-between; }
+  .setting-name { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface-2);
+    border-radius: 999px;
+    padding: 4px;
+  }
+  .stepper button {
+    width: 30px; height: 30px;
+    border: 0; border-radius: 999px;
+    background: var(--surface);
+    color: var(--accent-deep);
+    font: inherit; font-size: 17px; font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: filter 0.15s ease;
+  }
+  .stepper button:hover { filter: brightness(0.97); }
+  .num {
+    min-width: 58px;
+    text-align: center;
+    font-size: 15px; font-weight: 800; color: var(--ink);
+  }
+  .num small { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); margin-left: 2px; }
+  .hint { margin: 2px 0 0; font-size: 11.5px; color: var(--ink-faint); }
 </style>
