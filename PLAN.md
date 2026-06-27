@@ -61,20 +61,30 @@ Core features (the heart of the product):
    exploring?" prompt sets the *current topic*; if none is given, links go to **General**.
    Within a topic, links are served **in order, like a to-do list** (loops back to the start at
    the end). *(Configurable; random is a possible later option.)*
-4. **Two ways to add links:**
+4. **Redirect landing page — your link menu.** Instead of dropping the user on a single link,
+   the page a blocked site redirects to shows **all** their saved links as a tidy menu, grouped by
+   the **site each link belongs to** (YouTube, Instagram, …) — the site is derived from the link's
+   URL, no extra tagging needed — and, **under each site name, grouped by topic**. The blocked
+   site the user just reached for is **prioritised**: if they have saved links for *that* site,
+   that site's list is shown first; if they have none for it, their **other** sites' lists are
+   shown instead. So reaching for YouTube surfaces the YouTube videos they meant to watch (by
+   topic); reaching for a site they've saved nothing for still offers everything else they wanted
+   to get to. *Why: it converts the impulse into a clear pick among the user's own goals, on-theme
+   with the very site they reached for.*
+5. **Two ways to add links:**
    - **Paste a URL** directly (choose a topic; defaults to General).
    - **Capture the current tab** — when the timer is **off**, the user can open the extension on
      any page worth keeping and tap "Save this page to a list". (Capture lives in the off-state
      because while the timer is *on*, a blocked tab would already have been redirected away.)
-5. **Freedom window (per-site allowance)** — sometimes a blocked site is genuinely needed
+6. **Freedom window (per-site allowance)** — sometimes a blocked site is genuinely needed
    (a lecture, a tutorial). The user can allow **one** of their blocked sites for a chosen time:
    **5 min · 15 min · 30 min · until I turn it off**. During the window that one site is not
    redirected; every *other* site on the block list stays protected. The popup always shows a
    visible status (e.g. "youtube.com: free for 12 more min" / "free, no time limit — Turn off")
    so an allowance is never silently left on. Picking a duration on purpose is intentional
    friction — it keeps this from becoming a mindless "skip" button.
-6. **Escape hatches:** (a) allow one site for a time *(above)*, (b) pause the whole timer.
-7. **Bunny pet + health bar** — a pixel bunny that gets happier the longer you focus and sad
+7. **Escape hatches:** (a) allow one site for a time *(above)*, (b) pause the whole timer.
+8. **Bunny pet + health bar** — a pixel bunny that gets happier the longer you focus and sad
    when idle a long time (eats grass, art to be illustrated later). This is a gentle
    gamification *skin*, not the core — built **last**.
 
@@ -145,7 +155,9 @@ Built so there's something runnable early; the impressive mechanic comes before 
 - **Stage 1 — Timer.** Working Pomodoro countdown (focus/break, start/pause/reset) in the popup,
   kept alive by the background worker + alarms. *Deliverable: a real timer.*
 - **Stage 2 — Substitution engine + topic lists.** Storage for distracting sites and topic-based
-  useful links; the redirect logic; the "What are you exploring?" topic prompt.
+  useful links; the redirect logic; the "What are you exploring?" topic prompt. The redirect
+  landing page shows the user's saved links as a menu grouped by site, then by topic, with the
+  site they reached for shown first (see feature 4).
   *Deliverable: opening any site on your block list during focus sends you to your goal. (The wow moment.)*
 - **Stage 3 — Freedom window.** Per-site timed allowance (5/15/30/until-off) on the redirect
   landing page and in the popup, with visible status. *Deliverable: escape hatch works.*
@@ -162,5 +174,9 @@ nice-to-have" so we ship a working demo.
 ## 6. Open / deferred decisions
 
 - Link serving order defaulted to **in order**; random is a possible toggle later.
+- The redirect landing page now shows a full **grouped menu** (feature 4) the user picks from.
+  Open question: does the old "serve the next link in order" behaviour still apply (e.g. as a
+  highlighted "next up" suggestion above the menu), or does the menu replace it entirely? Leaning
+  toward the menu being the main thing, with in-order kept only for the highlighted suggestion.
 - Exact bunny mood thresholds (how fast it gets sad/happy) — tune during Stage 5.
 - Whether the bunny reacts to using a freedom window — likely stays neutral (non-punitive).
