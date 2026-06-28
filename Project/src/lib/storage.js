@@ -48,3 +48,12 @@ export const lists = storage.defineItem('local:lists', {
     cursor: 0,
   },
 });
+
+// Active "freedom windows" — the per-site escape hatch (Stage 3).
+//   { "<blocked site>": <expiry> }
+// where <expiry> is either a timestamp (ms) when the window ends, or the string
+// 'forever' for an allowance with no time limit. While a site has an active
+// entry here, it is NOT redirected during focus; every other blocked site is.
+export const allowances = storage.defineItem('local:allowances', {
+  fallback: {},
+});

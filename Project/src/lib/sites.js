@@ -24,6 +24,32 @@ export function isDistracting(host, sites) {
   return sites.some((site) => host === site || host.endsWith('.' + site));
 }
 
+// Which entry in `sites` does this host belong to? Returns the matching site
+// (e.g. "youtube.com" for a visit to "m.youtube.com"), or the host itself if
+// none matched. Used so a freedom window is keyed to the whole site family.
+export function matchingSite(host, sites) {
+  if (!host) return host;
+  return sites.find((site) => host === site || host.endsWith('.' + site)) ?? host;
+}
+
+// --- Freedom windows (per-site allowance, Stage 3) -----------------------
+//
+// `allowances` is { site: expiry } where expiry is a timestamp (ms) or the
+// string 'forever'. A window is active if it's 'forever' or its expiry is still
+// in the future. We match a host against the allowance keys the same way as the
+// block list, so "m.youtube.com" is covered by an allowance on "youtube.com".
+export function activeAllowance(host, allowances, now = Date.now()) {
+  if (!host || !allowances) return null;
+  for (const [site, expiry] of Object.entries(allowances)) {
+    if (host === site || host.endsWith('.' + site)) {
+      if (expiry === 'forever' || (typeof expiry === 'number' && expiry > now)) {
+        return { site, expiry };
+      }
+    }
+  }
+  return null;
+}
+
 // A saved link is an object { url, title }. Older saves may be a plain string,
 // so these accessors tolerate both rather than forcing a data migration.
 export function linkUrl(link) {

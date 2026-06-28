@@ -4,11 +4,13 @@
   // next (`to`/`title`, shown as a highlighted suggestion). For the full menu we
   // read the saved lists straight from storage and group them by site, then topic.
   import { onMount } from 'svelte';
+  import { browser } from '#imports';
   import { lists } from '@/lib/storage';
   import { groupLinksBySite, linkTitle, linkUrl } from '@/lib/sites';
 
   const params = new URLSearchParams(location.search);
   const from = params.get('from') ?? 'that site';
+  const orig = params.get('orig'); // the exact page the user was heading to
   const to = params.get('to');
   const title = params.get('title');
 
@@ -33,6 +35,13 @@
 
   function open(u) {
     if (u) location.replace(u); // replace() so Back doesn't loop us here
+  }
+
+  // Freedom window: grant THIS site a pass, then go to the page they wanted.
+  // `minutes` is a number or the string 'forever'.
+  async function allow(minutes) {
+    await browser.runtime.sendMessage({ action: 'allowSite', host: from, minutes });
+    open(orig || to || `https://${from}`);
   }
 </script>
 
@@ -95,10 +104,16 @@
       {/if}
     {/if}
 
-    <p class="foot">
-      Need {from} for studying? Pause the timer (or the per-site allowance, coming
-      soon) from the Sidestep popup.
-    </p>
+    <div class="allow">
+      <span class="allow-q">Genuinely need {from} right now?</span>
+      <div class="allow-btns">
+        <button onclick={() => allow(5)}>5 min</button>
+        <button onclick={() => allow(15)}>15 min</button>
+        <button onclick={() => allow(30)}>30 min</button>
+        <button class="allow-forever" onclick={() => allow('forever')}>No limit</button>
+      </div>
+      <span class="allow-note">Only {from} opens up — your other sites stay protected. You can turn it off anytime from the popup.</span>
+    </div>
   </div>
 </main>
 
@@ -248,9 +263,31 @@
     background: var(--surface-2);
   }
 
-  .foot {
+  /* Freedom-window escape hatch */
+  .allow {
     margin: 24px 0 0;
-    color: var(--ink-faint);
-    font-size: 12.5px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
   }
+  .allow-q { font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+  .allow-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
+  .allow-btns button {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 7px 14px;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .allow-btns button:hover { background: var(--accent-tint); border-color: var(--accent-tint); }
+  .allow-forever { color: var(--ink-soft); }
+  .allow-note { font-size: 11.5px; color: var(--ink-faint); max-width: 340px; }
 </style>

@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { browser } from '#imports';
-  import { settings, timer, lists } from '@/lib/storage';
+  import { settings, timer, lists, allowances } from '@/lib/storage';
   import { durationMs, formatMs } from '@/lib/timer';
   import { currentLinks, hostnameOf, linkTitle, linkUrl, normalizeUrl } from '@/lib/sites';
 
@@ -13,6 +13,7 @@
   let t = $state(null);
   let s = $state(null);
   let l = $state(null);
+  let al = $state(null); // active freedom windows: { site: expiry }
   // `now` ticks every quarter second so the countdown updates smoothly (display
   // only — the real timing lives in `endsAt`).
   let now = $state(Date.now());
@@ -28,17 +29,20 @@
       t = await timer.getValue();
       s = await settings.getValue();
       l = await lists.getValue();
+      al = await allowances.getValue();
     })();
 
     const unwatchT = timer.watch((v) => (t = v));
     const unwatchS = settings.watch((v) => (s = v));
     const unwatchL = lists.watch((v) => (l = v));
+    const unwatchA = allowances.watch((v) => (al = v));
     const ticker = setInterval(() => (now = Date.now()), 250);
 
     return () => {
       unwatchT();
       unwatchS();
       unwatchL();
+      unwatchA();
       clearInterval(ticker);
     };
   });
@@ -51,6 +55,25 @@
   let topic = $derived(l?.currentTopic ?? 'General');
   let links = $derived(l ? currentLinks(l) : []);
   let sites = $derived(s?.distractingSites ?? []);
+  // Freedom windows that are still active right now (recomputes as `now` ticks,
+  // so an expired one disappears on its own).
+  let allowed = $derived(
+    al
+      ? Object.entries(al)
+          .filter(([, exp]) => exp === 'forever' || (typeof exp === 'number' && exp > now))
+          .map(([site, exp]) => ({ site, exp }))
+      : []
+  );
+
+  function allowanceLabel(exp) {
+    if (exp === 'forever') return 'free · no time limit';
+    const mins = Math.max(0, Math.ceil((exp - now) / 60000));
+    return `free for ${mins} more min`;
+  }
+
+  function turnOff(site) {
+    send('revokeSite', { host: site });
+  }
 
   function remainingFor(t, now) {
     if (t.status === 'running' && t.endsAt != null) return Math.max(0, t.endsAt - now);
@@ -164,6 +187,17 @@
         >Break</button>
       </div>
 
+      {#if allowed.length}
+        <div class="freedom-banner">
+          {#each allowed as a}
+            <div class="fb-row">
+              <span class="fb-text"><strong>{a.site}</strong> {allowanceLabel(a.exp)}</span>
+              <button class="fb-off" onclick={() => turnOff(a.site)}>Turn off</button>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
       <!-- The bunny's home. Empty for now — a faint silhouette marks where the
            pet (the gamification layer, built last) will live and react. -->
       <div class="habitat">
@@ -264,6 +298,25 @@
 
     <!-- ===================== BLOCKED PAGE ===================== -->
     {#if tab === 'blocked'}
+      {#if allowed.length}
+        <section class="card">
+          <div class="card-head">
+            <span class="card-label">Allowed right now</span>
+          </div>
+          <ul class="allow-list">
+            {#each allowed as a}
+              <li>
+                <div class="al-main">
+                  <span class="al-site">{a.site}</span>
+                  <span class="al-status">{allowanceLabel(a.exp)}</span>
+                </div>
+                <button class="mini" onclick={() => turnOff(a.site)}>Turn off</button>
+              </li>
+            {/each}
+          </ul>
+        </section>
+      {/if}
+
       <section class="card">
         <div class="card-head">
           <span class="card-label">Sites to redirect</span>
@@ -649,4 +702,36 @@
   }
   .num small { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); margin-left: 2px; }
   .hint { margin: 2px 0 0; font-size: 11.5px; color: var(--ink-faint); }
+
+  /* Freedom-window status (banner on Focus, list on Blocked) */
+  .freedom-banner {
+    background: var(--accent-tint);
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    border-radius: var(--r);
+    padding: 8px 10px 8px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .fb-row { display: flex; align-items: center; gap: 8px; }
+  .fb-text { flex: 1; min-width: 0; font-size: 12px; color: var(--accent-deep); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fb-text strong { font-weight: 800; }
+  .fb-off {
+    border: 0; background: var(--surface); color: var(--accent-deep);
+    border-radius: 999px; padding: 4px 11px;
+    font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer;
+    box-shadow: var(--shadow-sm); transition: filter 0.15s ease;
+  }
+  .fb-off:hover { filter: brightness(0.97); }
+
+  .allow-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .allow-list li {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--accent-tint);
+    border-radius: 11px;
+    padding: 8px 10px 8px 12px;
+  }
+  .al-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .al-site { font-size: 13px; font-weight: 800; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .al-status { font-size: 11.5px; font-weight: 600; color: var(--accent-deep); }
 </style>
