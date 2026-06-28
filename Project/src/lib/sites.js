@@ -128,6 +128,58 @@ export function buildAllowedKeys(lists) {
   return keys;
 }
 
+// --- Grouping for the redirect menu --------------------------------------
+//
+// The redirect landing page shows every saved link grouped by the SITE it
+// belongs to, then by topic. These two helpers are pure (no storage), so they
+// are easy to test and reuse.
+
+// Fold a hostname into a friendly site "group". The big platforms have several
+// domains (youtu.be, m.youtube.com, twitter.com) that all mean the same place,
+// so we map them to one key + display label. Anything else groups under its own
+// plain hostname.
+export function siteGroup(host) {
+  const h = (host || '').replace(/^www\./, '').toLowerCase();
+  if (h === 'youtube.com' || h === 'youtu.be' || h === 'm.youtube.com' || h === 'music.youtube.com')
+    return { key: 'youtube', label: 'YouTube' };
+  if (h === 'instagram.com' || h === 'm.instagram.com')
+    return { key: 'instagram', label: 'Instagram' };
+  if (h === 'x.com' || h === 'twitter.com' || h === 'mobile.x.com' || h === 'mobile.twitter.com')
+    return { key: 'x', label: 'X' };
+  if (h === 'reddit.com' || h === 'old.reddit.com' || h === 'np.reddit.com' || h === 'm.reddit.com')
+    return { key: 'reddit', label: 'Reddit' };
+  return { key: h, label: h };
+}
+
+// Build the redirect menu from saved lists: links grouped by site, then topic.
+// Returns: [ { key, label, topics: [ { topic, links: [...] } ] }, ... ].
+// `priorityHost` (the site the user just reached for) is floated to the front
+// when the user has saved links for it.
+export function groupLinksBySite(lists, priorityHost = '') {
+  const sites = new Map(); // key -> { key, label, topics: Map(topic -> links[]) }
+  const topics = lists?.topics ?? {};
+  for (const [topic, links] of Object.entries(topics)) {
+    for (const link of links) {
+      const host = hostnameOf(linkUrl(link));
+      if (!host) continue;
+      const { key, label } = siteGroup(host);
+      if (!sites.has(key)) sites.set(key, { key, label, topics: new Map() });
+      const entry = sites.get(key);
+      if (!entry.topics.has(topic)) entry.topics.set(topic, []);
+      entry.topics.get(topic).push(link);
+    }
+  }
+  const result = [...sites.values()].map((s) => ({
+    key: s.key,
+    label: s.label,
+    topics: [...s.topics.entries()].map(([topic, links]) => ({ topic, links })),
+  }));
+  // Float the site the user reached for to the front, if present.
+  const priorityKey = siteGroup(priorityHost).key;
+  result.sort((a, b) => (a.key === priorityKey ? -1 : b.key === priorityKey ? 1 : 0));
+  return result;
+}
+
 // Tidy up a URL the user typed/pasted. Adds "https://" if they left off the
 // scheme, and returns the canonical href. Returns null if it can't be a URL.
 export function normalizeUrl(input) {

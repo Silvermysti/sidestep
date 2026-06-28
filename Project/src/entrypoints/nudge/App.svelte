@@ -1,12 +1,25 @@
 <script>
-  // This page is what a redirected tab shows. The background script sends us two
-  // bits of information in the URL: `from` (the site we stepped past) and `to`
-  // (the user's own useful link to offer instead). We read them straight from
-  // the address bar — no storage needed here.
+  // This page is what a redirected tab shows. The background script tells us in
+  // the URL which site we stepped past (`from`) and which single link it served
+  // next (`to`/`title`, shown as a highlighted suggestion). For the full menu we
+  // read the saved lists straight from storage and group them by site, then topic.
+  import { onMount } from 'svelte';
+  import { lists } from '@/lib/storage';
+  import { groupLinksBySite, linkTitle, linkUrl } from '@/lib/sites';
+
   const params = new URLSearchParams(location.search);
   const from = params.get('from') ?? 'that site';
   const to = params.get('to');
   const title = params.get('title');
+
+  let groups = $state([]);
+  let loaded = $state(false);
+
+  onMount(async () => {
+    const l = await lists.getValue();
+    groups = groupLinksBySite(l, from); // site you reached for floats to front
+    loaded = true;
+  });
 
   function prettyUrl(u) {
     try {
@@ -18,8 +31,8 @@
     }
   }
 
-  function go() {
-    if (to) location.replace(to); // replace() so Back doesn't loop us here
+  function open(u) {
+    if (u) location.replace(u); // replace() so Back doesn't loop us here
   }
 </script>
 
@@ -39,17 +52,47 @@
     <p class="sub">You're in a focus session. Here's what you actually wanted to get to.</p>
 
     {#if to}
-      <button class="go" onclick={go}>
-        <span class="go-label">{title || 'Open your focus link'}</span>
+      <button class="go" onclick={() => open(to)}>
+        <span class="go-tag">Next up</span>
+        <span class="go-label">{title || prettyUrl(to)}</span>
         <span class="go-url">{prettyUrl(to)}</span>
         <span class="go-arrow" aria-hidden="true">→</span>
       </button>
-    {:else}
-      <div class="empty">
-        You haven't saved any focus links yet. Open Sidestep and add a few links to
-        the topic you're exploring — then they'll appear here instead of the
-        distraction.
-      </div>
+    {/if}
+
+    {#if loaded}
+      {#if groups.length}
+        <div class="menu">
+          {#each groups as g}
+            <section class="site">
+              <h2 class="site-name">{g.label}</h2>
+              {#each g.topics as tp}
+                <div class="topic-group">
+                  <div class="topic-name">{tp.topic}</div>
+                  <ul>
+                    {#each tp.links as link}
+                      <li>
+                        <button class="link" onclick={() => open(linkUrl(link))}>
+                          <span class="l-title">{linkTitle(link) || prettyUrl(linkUrl(link))}</span>
+                          {#if linkTitle(link)}
+                            <span class="l-url">{prettyUrl(linkUrl(link))}</span>
+                          {/if}
+                        </button>
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+              {/each}
+            </section>
+          {/each}
+        </div>
+      {:else}
+        <div class="empty">
+          You haven't saved any focus links yet. Open Sidestep and add a few links to
+          the topic you're exploring — then they'll appear here instead of the
+          distraction.
+        </div>
+      {/if}
     {/if}
 
     <p class="foot">
@@ -62,7 +105,7 @@
 <style>
   main {
     width: 100%;
-    max-width: 460px;
+    max-width: 520px;
   }
 
   .card {
@@ -110,52 +153,92 @@
   .from { color: var(--accent-deep); }
 
   .sub {
-    margin: 0 0 24px;
+    margin: 0 0 22px;
     color: var(--ink-soft);
     font-size: 15px;
   }
 
+  /* Highlighted "next up" suggestion */
   .go {
     width: 100%;
     border: 0;
     cursor: pointer;
     border-radius: var(--r);
-    padding: 16px 20px;
+    padding: 15px 20px;
     background: var(--accent);
     color: #fff;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     text-align: left;
-    gap: 3px;
+    gap: 2px;
     position: relative;
     box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 38%, transparent);
     transition: filter 0.15s ease, transform 0.05s ease;
   }
   .go:hover { filter: brightness(1.04); }
   .go:active { transform: translateY(1px); }
+  .go-tag { font-size: 10.5px; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; opacity: 0.85; }
   .go-label {
     font-size: 16px; font-weight: 800;
     max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .go-url {
-    font-size: 13px;
-    opacity: 0.85;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 13px; opacity: 0.85;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .go-arrow {
-    position: absolute;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 22px;
-    opacity: 0.9;
+  .go-arrow { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 22px; opacity: 0.9; }
+
+  /* The grouped menu */
+  .menu { margin-top: 22px; text-align: left; display: flex; flex-direction: column; gap: 18px; }
+  .site { display: flex; flex-direction: column; gap: 8px; }
+  .site-name {
+    font-family: 'Fredoka', 'Nunito', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-deep);
+    margin: 0;
+    padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line);
+  }
+  .topic-group { display: flex; flex-direction: column; gap: 5px; }
+  .topic-name {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 4px 0 1px;
+  }
+  .topic-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+
+  .link {
+    width: 100%;
+    border: 0;
+    cursor: pointer;
+    border-radius: 11px;
+    padding: 10px 13px;
+    background: var(--surface-2);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 1px;
+    transition: background 0.15s ease, transform 0.05s ease;
+  }
+  .link:hover { background: var(--accent-tint); }
+  .link:active { transform: translateY(1px); }
+  .l-title {
+    font-size: 13.5px; font-weight: 700; color: var(--ink);
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .l-url {
+    font-size: 11.5px; color: var(--ink-soft);
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
 
   .empty {
+    margin-top: 22px;
     border: 1.5px dashed var(--line);
     border-radius: var(--r);
     padding: 18px;
@@ -166,7 +249,7 @@
   }
 
   .foot {
-    margin: 22px 0 0;
+    margin: 24px 0 0;
     color: var(--ink-faint);
     font-size: 12.5px;
   }
