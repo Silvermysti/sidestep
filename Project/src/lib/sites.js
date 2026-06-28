@@ -42,7 +42,7 @@ export function registrableDomain(host) {
 // We match the exact domain OR any subdomain of it, so "m.youtube.com" and
 // "youtube.com" both count when the list contains "youtube.com".
 export function isDistracting(host, sites) {
-  if (!host) return false;
+  if (!host || !Array.isArray(sites)) return false;
   return sites.some((site) => host === site || host.endsWith('.' + site));
 }
 
@@ -50,7 +50,7 @@ export function isDistracting(host, sites) {
 // (e.g. "youtube.com" for a visit to "m.youtube.com"), or the host itself if
 // none matched. Used so a freedom window is keyed to the whole site family.
 export function matchingSite(host, sites) {
-  if (!host) return host;
+  if (!host || !Array.isArray(sites)) return host;
   return sites.find((site) => host === site || host.endsWith('.' + site)) ?? host;
 }
 

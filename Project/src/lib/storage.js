@@ -10,15 +10,19 @@ import { storage } from '#imports';
 
 const MINUTE = 60 * 1000;
 
+// The default settings, in one named place so both the storage fallback and the
+// startup "heal" (background.ts) can use the exact same values.
+export const SETTINGS_DEFAULTS = {
+  distractingSites: ['youtube.com', 'instagram.com', 'x.com', 'reddit.com'],
+  focusMinutes: 25,
+  breakMinutes: 5,
+  linkOrder: 'sequential', // 'sequential' (to-do style) | 'random'
+};
+
 // User configuration. (Stage 1 only really uses focus/break minutes; the rest
 // is here so later stages have a home.)
 export const settings = storage.defineItem('local:settings', {
-  fallback: {
-    distractingSites: ['youtube.com', 'instagram.com', 'x.com', 'reddit.com'],
-    focusMinutes: 25,
-    breakMinutes: 5,
-    linkOrder: 'sequential', // 'sequential' (to-do style) | 'random'
-  },
+  fallback: SETTINGS_DEFAULTS,
 });
 
 // The authoritative timer state.

@@ -6,7 +6,7 @@
 // if it has gone to sleep in the meantime (service workers sleep to save memory,
 // which is why a normal setInterval countdown would NOT survive here).
 
-import { allowances, lists, settings, timer } from '@/lib/storage';
+import { allowances, lists, settings, SETTINGS_DEFAULTS, timer } from '@/lib/storage';
 import {
   activeAllowance,
   buildAllowedKeys,
@@ -33,6 +33,11 @@ const TIMER_ALARM = 'sidestep-timer-end';
 const FREEDOM_PREFIX = 'sidestep-freedom:';
 
 export default defineBackground(() => {
+  // Settings saved by an older version may be missing keys added later (the
+  // storage fallback only applies when NOTHING is saved). Top up any missing
+  // keys from the defaults so the rest of the code always sees a full object.
+  healSettings();
+
   // Commands coming from the popup.
   browser.runtime.onMessage.addListener((message) => {
     return handleCommand(message);
@@ -66,6 +71,27 @@ export default defineBackground(() => {
     handleNavigation(details);
   });
 });
+
+// Fill in any settings keys missing from older saved data. We keep whatever the
+// user has set and only add what's absent; an existing (even empty) array is
+// left alone so we never clobber the user's own block list.
+async function healSettings() {
+  const stored: any = await settings.getValue();
+  const needsFix =
+    !stored ||
+    !Array.isArray(stored.distractingSites) ||
+    stored.focusMinutes == null ||
+    stored.breakMinutes == null ||
+    stored.linkOrder == null;
+  if (!needsFix) return;
+  await settings.setValue({
+    ...SETTINGS_DEFAULTS,
+    ...stored,
+    distractingSites: Array.isArray(stored?.distractingSites)
+      ? stored.distractingSites
+      : SETTINGS_DEFAULTS.distractingSites,
+  });
+}
 
 async function handleNavigation(details: any) {
   const host = hostnameOf(details.url);
