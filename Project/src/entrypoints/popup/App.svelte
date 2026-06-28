@@ -3,7 +3,7 @@
   import { browser } from '#imports';
   import { settings, timer, lists, allowances } from '@/lib/storage';
   import { durationMs, formatMs } from '@/lib/timer';
-  import { currentLinks, hostnameOf, linkTitle, linkUrl, normalizeUrl } from '@/lib/sites';
+  import { currentLinks, hostnameOf, linkTitle, linkUrl, normalizeUrl, registrableDomain } from '@/lib/sites';
 
   // Which top tab is showing. The popup is now split into pages instead of one
   // long scroll; this single piece of state decides which page is visible.
@@ -139,6 +139,17 @@
 
   async function removeSite(host) {
     await settings.setValue({ ...s, distractingSites: sites.filter((x) => x !== host) });
+  }
+
+  // Block whatever site the active tab is on. We reduce the full URL to just its
+  // registrable domain (e.g. youtube.com/watch?v=… -> youtube.com), so the whole
+  // site is blocked, not one specific page. The new chip appears immediately so
+  // the user can see (and edit/remove) exactly what got added.
+  async function blockCurrentSite() {
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    const host = registrableDomain(hostnameOf(tab?.url ?? '') ?? '');
+    if (!host || sites.includes(host)) return;
+    await settings.setValue({ ...s, distractingSites: [...sites, host] });
   }
 
   // --- Settings: session lengths ---
@@ -330,6 +341,11 @@
           />
           <button class="mini" onclick={addSite}>Add</button>
         </div>
+
+        <button class="soft-btn" onclick={blockCurrentSite}>
+          <span class="plus">＋</span> Block the site I'm on
+        </button>
+
         {#if sites.length}
           <ul class="chips">
             {#each sites as host}

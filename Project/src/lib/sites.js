@@ -16,6 +16,28 @@ export function hostnameOf(urlString) {
   }
 }
 
+// Reduce a hostname to the "registrable domain" — the part a user means when
+// they say "block YouTube". e.g. "m.youtube.com" / "music.youtube.com" ->
+// "youtube.com". This lets the block list cover every subdomain at once.
+//
+// Getting this perfectly right needs the Public Suffix List (a huge maintained
+// file). We use a small heuristic instead: normally take the last two labels,
+// but for a known set of multi-part suffixes (like "co.uk") take three, so
+// "bbc.co.uk" stays "bbc.co.uk" rather than collapsing to "co.uk". A wrong guess
+// is harmless — it shows up as an editable chip the user can fix or remove.
+const MULTI_PART_TLDS = new Set([
+  'co.uk', 'org.uk', 'gov.uk', 'ac.uk', 'co.in', 'co.jp', 'co.kr', 'co.nz',
+  'co.za', 'com.au', 'com.br', 'com.mx', 'com.sg', 'com.tr',
+]);
+export function registrableDomain(host) {
+  if (!host) return host;
+  const h = host.replace(/^www\./, '').toLowerCase();
+  const parts = h.split('.');
+  if (parts.length <= 2) return h;
+  const lastTwo = parts.slice(-2).join('.');
+  return MULTI_PART_TLDS.has(lastTwo) ? parts.slice(-3).join('.') : lastTwo;
+}
+
 // Is this host one of the user's distracting sites?
 // We match the exact domain OR any subdomain of it, so "m.youtube.com" and
 // "youtube.com" both count when the list contains "youtube.com".
