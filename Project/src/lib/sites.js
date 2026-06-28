@@ -16,26 +16,16 @@ export function hostnameOf(urlString) {
   }
 }
 
-// Reduce a hostname to the "registrable domain" — the part a user means when
-// they say "block YouTube". e.g. "m.youtube.com" / "music.youtube.com" ->
-// "youtube.com". This lets the block list cover every subdomain at once.
-//
-// Getting this perfectly right needs the Public Suffix List (a huge maintained
-// file). We use a small heuristic instead: normally take the last two labels,
-// but for a known set of multi-part suffixes (like "co.uk") take three, so
-// "bbc.co.uk" stays "bbc.co.uk" rather than collapsing to "co.uk". A wrong guess
-// is harmless — it shows up as an editable chip the user can fix or remove.
-const MULTI_PART_TLDS = new Set([
-  'co.uk', 'org.uk', 'gov.uk', 'ac.uk', 'co.in', 'co.jp', 'co.kr', 'co.nz',
-  'co.za', 'com.au', 'com.br', 'com.mx', 'com.sg', 'com.tr',
-]);
-export function registrableDomain(host) {
+// Turn the host of the page the user is on into the entry to add to the block
+// list. We strip ONLY "www." and the common mobile prefixes ("m.", "mobile.") —
+// not arbitrary subdomains — so blocking gemini.google.com blocks just that, not
+// all of google.com. We don't need to collapse subdomains to cover them: a block
+// on "youtube.com" already matches "m.youtube.com" etc. via isDistracting's
+// subdomain check. The result shows as an editable chip, so the user can always
+// broaden it (type "google.com") or narrow it themselves.
+export function siteToBlock(host) {
   if (!host) return host;
-  const h = host.replace(/^www\./, '').toLowerCase();
-  const parts = h.split('.');
-  if (parts.length <= 2) return h;
-  const lastTwo = parts.slice(-2).join('.');
-  return MULTI_PART_TLDS.has(lastTwo) ? parts.slice(-3).join('.') : lastTwo;
+  return host.replace(/^(?:www|m|mobile)\./i, '').toLowerCase();
 }
 
 // Is this host one of the user's distracting sites?
