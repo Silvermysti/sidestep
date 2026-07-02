@@ -53,6 +53,17 @@ export const lists = storage.defineItem('local:lists', {
   },
 });
 
+// The user's "one thing" for the current focus session (Stage 5 — intention
+// anchor). We show this back to them on the redirect page, so a wandering brain
+// is reminded of its own goal at the exact moment it's drifting.
+//   text      : what they're here to do ("finish the biology notes")
+//   firstStep : optional tiniest first step ("open the doc") — un-freezes a start
+//   setAt     : timestamp (ms) it was last set, or null when empty
+// Entirely optional — an empty intention is fine; we never block on it.
+export const intention = storage.defineItem('local:intention', {
+  fallback: { text: '', firstStep: '', setAt: null },
+});
+
 // Active "freedom windows" — the per-site escape hatch (Stage 3).
 //   { "<blocked site>": <expiry> }
 // where <expiry> is either a timestamp (ms) when the window ends, or the string

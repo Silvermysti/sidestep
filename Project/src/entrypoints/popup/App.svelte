@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { browser } from '#imports';
-  import { settings, timer, lists, allowances } from '@/lib/storage';
+  import { settings, timer, lists, allowances, intention } from '@/lib/storage';
   import { durationMs, formatMs } from '@/lib/timer';
   import { currentLinks, hostnameOf, linkTitle, linkUrl, normalizeUrl, siteToBlock } from '@/lib/sites';
 
@@ -23,6 +23,12 @@
   let linkDraft = $state('');
   let titleDraft = $state('');
   let siteDraft = $state('');
+  // The "one thing" for this session — drafts so typing feels instant; we save
+  // them straight to storage as they change. `showFirstStep` reveals the optional
+  // "break it down" field.
+  let intentionDraft = $state('');
+  let firstStepDraft = $state('');
+  let showFirstStep = $state(false);
 
   onMount(() => {
     (async () => {
@@ -30,6 +36,10 @@
       s = await settings.getValue();
       l = await lists.getValue();
       al = await allowances.getValue();
+      const i = await intention.getValue();
+      intentionDraft = i.text;
+      firstStepDraft = i.firstStep;
+      if (i.firstStep) showFirstStep = true;
     })();
 
     const unwatchT = timer.watch((v) => (t = v));
@@ -46,6 +56,14 @@
       clearInterval(ticker);
     };
   });
+
+  // Save the intention as the user types. Kept trivially simple — an empty goal
+  // clears `setAt` so nothing stale lingers. Never required; never blocks Start.
+  async function saveIntention() {
+    const text = intentionDraft.trim();
+    const firstStep = firstStepDraft.trim();
+    await intention.setValue({ text, firstStep, setAt: text ? Date.now() : null });
+  }
 
   // Derived display values — recompute automatically when their inputs change.
   let remaining = $derived(t && s ? remainingFor(t, now) : 0);
@@ -208,6 +226,31 @@
           {/each}
         </div>
       {/if}
+
+      <!-- Intention anchor: the "one thing" for this session. Optional — it just
+           reminds you of your own goal on the redirect page if you drift. -->
+      <div class="intention">
+        <label class="intention-q" for="intention-input">What's the one thing?</label>
+        <input
+          id="intention-input"
+          class="inp full"
+          placeholder="e.g. finish the biology notes"
+          bind:value={intentionDraft}
+          oninput={saveIntention}
+        />
+        {#if showFirstStep}
+          <input
+            class="inp full step"
+            placeholder="Tiniest first step — even just “open the doc”"
+            bind:value={firstStepDraft}
+            oninput={saveIntention}
+          />
+        {:else}
+          <button class="breakdown" onclick={() => (showFirstStep = true)}>
+            Feeling stuck? Break it down →
+          </button>
+        {/if}
+      </div>
 
       <!-- The bunny's home. Empty for now — a faint silhouette marks where the
            pet (the gamification layer, built last) will live and react. -->
@@ -564,6 +607,25 @@
     background: color-mix(in srgb, var(--accent) 20%, transparent);
     border-top: 2px solid color-mix(in srgb, var(--accent) 34%, transparent);
   }
+
+  /* Intention anchor */
+  .intention { display: flex; flex-direction: column; gap: 7px; }
+  .intention-q { font-size: 12px; font-weight: 700; color: var(--ink-soft); padding-left: 2px; }
+  .step { font-size: 12.5px; }
+  .breakdown {
+    align-self: flex-start;
+    border: 0;
+    background: transparent;
+    color: var(--accent-deep);
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 1px 2px;
+    opacity: 0.85;
+    transition: opacity 0.15s ease;
+  }
+  .breakdown:hover { opacity: 1; }
 
   /* Progress */
   .bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
