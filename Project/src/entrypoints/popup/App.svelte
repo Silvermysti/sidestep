@@ -23,12 +23,9 @@
   let linkDraft = $state('');
   let titleDraft = $state('');
   let siteDraft = $state('');
-  // The "one thing" for this session — drafts so typing feels instant; we save
-  // them straight to storage as they change. `showFirstStep` reveals the optional
-  // "break it down" field.
+  // The "one thing" for this session — a draft so typing feels instant; we save
+  // it straight to storage as it changes.
   let intentionDraft = $state('');
-  let firstStepDraft = $state('');
-  let showFirstStep = $state(false);
 
   onMount(() => {
     (async () => {
@@ -38,8 +35,6 @@
       al = await allowances.getValue();
       const i = await intention.getValue();
       intentionDraft = i.text;
-      firstStepDraft = i.firstStep;
-      if (i.firstStep) showFirstStep = true;
     })();
 
     const unwatchT = timer.watch((v) => (t = v));
@@ -61,8 +56,7 @@
   // clears `setAt` so nothing stale lingers. Never required; never blocks Start.
   async function saveIntention() {
     const text = intentionDraft.trim();
-    const firstStep = firstStepDraft.trim();
-    await intention.setValue({ text, firstStep, setAt: text ? Date.now() : null });
+    await intention.setValue({ text, setAt: text ? Date.now() : null });
   }
 
   // Derived display values — recompute automatically when their inputs change.
@@ -238,18 +232,6 @@
           bind:value={intentionDraft}
           oninput={saveIntention}
         />
-        {#if showFirstStep}
-          <input
-            class="inp full step"
-            placeholder="Tiniest first step — even just “open the doc”"
-            bind:value={firstStepDraft}
-            oninput={saveIntention}
-          />
-        {:else}
-          <button class="breakdown" onclick={() => (showFirstStep = true)}>
-            Feeling stuck? Break it down →
-          </button>
-        {/if}
       </div>
 
       <!-- The bunny's home. Empty for now — a faint silhouette marks where the
@@ -611,21 +593,6 @@
   /* Intention anchor */
   .intention { display: flex; flex-direction: column; gap: 7px; }
   .intention-q { font-size: 12px; font-weight: 700; color: var(--ink-soft); padding-left: 2px; }
-  .step { font-size: 12.5px; }
-  .breakdown {
-    align-self: flex-start;
-    border: 0;
-    background: transparent;
-    color: var(--accent-deep);
-    font: inherit;
-    font-size: 11.5px;
-    font-weight: 700;
-    cursor: pointer;
-    padding: 1px 2px;
-    opacity: 0.85;
-    transition: opacity 0.15s ease;
-  }
-  .breakdown:hover { opacity: 1; }
 
   /* Progress */
   .bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }

@@ -52,8 +52,6 @@ kindest, highest-leverage moment to help. The support features use it:
   **Thought parking lot.**
 - **Forgetting the goal / time blindness.** People genuinely lose track of what they sat down to
   do. → **Intention anchor.**
-- **Task-initiation freeze (the shared root of both).** A task feels too big, so the brain flees to
-  comfort. → smallest-first-step prompt inside the intention anchor.
 - **Shame spirals & progress blindness.** Anxiety discounts what got done; punitive streak-tools
   cause the shame that makes ADHD users quit. → **gentle win log**, additive only, never a red X.
 - **Focusing better with someone present (body-doubling).** → the **bunny is a body-double**, a
@@ -79,11 +77,10 @@ Core features (the heart of the product):
 1. **Pomodoro timer** — focus / break sessions, kept running in the background even when the
    popup is closed.
 2. **Intention anchor** — when a focus session starts, one gentle prompt: *"What's the one thing?"*
-   (with an optional nudge for a task that feels too big: *"Too big to start? What's the tiniest
-   first step — even just 'open the doc'?"*). The answer is shown back to the user **on the redirect
-   page** — *"You wanted to: finish the biology notes"* — so a wandering brain is reminded of its own
-   goal at the exact moment it's drifting. *Why: fights leaky working memory and the task-initiation
-   freeze that is the shared root of ADHD and anxiety distraction. Skippable — never a wall.*
+   The answer is shown back to the user **on the redirect page** — *"You wanted to: finish the biology
+   notes"* — so a wandering brain is reminded of its own goal at the exact moment it's drifting.
+   *Why: fights leaky working memory — people genuinely lose track of what they sat down to do.
+   Skippable — never a wall.*
 3. **Substitution engine** — during a *focus* session, opening **any site on the user's own block
    list** redirects the tab to a useful link from the user's **current topic**. The engine treats
    every blocked site the same way; none is special-cased.
@@ -172,7 +169,7 @@ timer: { mode: "focus" | "break", running: bool, endTime, remaining }
 bunny: { happiness, lastActive }
 
 // --- support layer ---
-intention: { text, firstStep, setAt }                 // this session's "one thing" (feature 2)
+intention: { text, setAt }                            // this session's "one thing" (feature 2)
 parkingLot: [ {text, savedAt, done}, ... ]            // thoughts jotted at the redirect (feature 6)
 sessionStats: { focusMs, sidesteps, parked }          // counted this session, for the win log (feature 10)
 ```
@@ -219,9 +216,9 @@ Built so there's something runnable early; the impressive mechanic comes before 
 
 **The support layer** (the ADHD/anxiety features — this is where the product gets its heart):
 
-- **Stage 5 — Intention anchor.** A "What's the one thing?" prompt when a focus session starts
-  (with the optional "tiniest first step" nudge), saved to storage and shown at the top of the
-  redirect landing page. *Deliverable: every redirect reminds you of your own goal.*
+- **Stage 5 — Intention anchor.** A "What's the one thing?" prompt when a focus session starts,
+  saved to storage and shown at the top of the redirect landing page.
+  *Deliverable: every redirect reminds you of your own goal.*
 - **Stage 6 — Thought parking lot.** A jot box on the redirect page that saves thoughts to a
   "for later" list instead of chasing them; the list is surfaced when the session ends.
   *Deliverable: a nagging thought becomes a parked task, not a rabbit hole.*

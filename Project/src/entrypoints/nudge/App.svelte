@@ -67,9 +67,6 @@
       <div class="intent">
         <span class="intent-label">You wanted to</span>
         <span class="intent-text">{goal.text}</span>
-        {#if goal.firstStep}
-          <span class="intent-step">Start with: {goal.firstStep}</span>
-        {/if}
       </div>
     {/if}
 
@@ -207,7 +204,6 @@
     opacity: 0.85;
   }
   .intent-text { font-size: 17px; font-weight: 800; color: var(--ink); line-height: 1.3; }
-  .intent-step { font-size: 13px; font-weight: 600; color: var(--accent-deep); margin-top: 2px; }
 
   /* Highlighted "next up" suggestion */
   .go {
