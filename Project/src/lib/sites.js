@@ -71,10 +71,13 @@ export function linkTitle(link) {
   return typeof link === 'string' ? '' : (link?.title ?? '');
 }
 
-// The links saved under the topic we're currently exploring.
+// The links saved under the topic we're currently exploring. Always returns an
+// array — a topic stored as anything other than a list (corrupted/old data) is
+// treated as empty rather than trusted, so callers can safely loop over it.
 export function currentLinks(lists) {
   const topic = lists.currentTopic || 'General';
-  return lists.topics[topic] ?? [];
+  const links = lists?.topics?.[topic];
+  return Array.isArray(links) ? links : [];
 }
 
 // Pick the NEXT link to serve (sequential, like a to-do list) and return an
@@ -157,7 +160,8 @@ export function canonicalKey(urlString) {
 // re-scanned the arrays on every navigation.
 export function buildAllowedKeys(lists) {
   const keys = new Set();
-  for (const links of Object.values(lists.topics ?? {})) {
+  for (const links of Object.values(lists?.topics ?? {})) {
+    if (!Array.isArray(links)) continue; // skip a corrupted/non-list topic
     for (const link of links) {
       const k = canonicalKey(linkUrl(link));
       if (k) keys.add(k);
@@ -197,6 +201,7 @@ export function groupLinksBySite(lists, priorityHost = '') {
   const sites = new Map(); // key -> { key, label, topics: Map(topic -> links[]) }
   const topics = lists?.topics ?? {};
   for (const [topic, links] of Object.entries(topics)) {
+    if (!Array.isArray(links)) continue; // skip a corrupted/non-list topic
     for (const link of links) {
       const host = hostnameOf(linkUrl(link));
       if (!host) continue;

@@ -38,6 +38,12 @@ export default defineBackground(() => {
   // keys from the defaults so the rest of the code always sees a full object.
   healSettings();
 
+  // Likewise, scrub the saved lists: a topic that somehow got stored as anything
+  // other than an array would crash the navigation handler (for…of over a
+  // non-list) and silently stop the redirect. Reset any bad topic to an empty
+  // list so blocking can never be broken by corrupted data.
+  healLists();
+
   // Commands coming from the popup.
   browser.runtime.onMessage.addListener((message) => {
     return handleCommand(message);
@@ -91,6 +97,36 @@ async function healSettings() {
       ? stored.distractingSites
       : SETTINGS_DEFAULTS.distractingSites,
   });
+}
+
+// Repair the saved lists in place: guarantee `topics` is an object and every
+// topic maps to an array. Only writes when something was actually wrong, so we
+// don't churn storage on every startup.
+async function healLists() {
+  const stored: any = await lists.getValue();
+  if (!stored || typeof stored !== 'object') return; // fallback covers a missing value
+
+  // A valid `topics` is a plain object (not null, not an array).
+  const validTopics =
+    stored.topics && typeof stored.topics === 'object' && !Array.isArray(stored.topics);
+  const topics = validTopics ? stored.topics : {};
+  let changed = !validTopics;
+
+  const fixed: Record<string, any[]> = {};
+  for (const [name, links] of Object.entries(topics)) {
+    if (Array.isArray(links)) {
+      fixed[name] = links;
+    } else {
+      fixed[name] = []; // a non-list topic was the crash source — reset it
+      changed = true;
+    }
+  }
+  if (Object.keys(fixed).length === 0) {
+    fixed.General = []; // never leave the user with no topics at all
+    changed = true;
+  }
+
+  if (changed) await lists.setValue({ ...stored, topics: fixed });
 }
 
 async function handleNavigation(details: any) {
