@@ -218,10 +218,12 @@ Built so there's something runnable early; the impressive mechanic comes before 
 
 - **Stage 5 — Intention anchor.** A "What's the one thing?" prompt when a focus session starts,
   saved to storage and shown at the top of the redirect landing page.
-  *Deliverable: every redirect reminds you of your own goal.*
-- **Stage 6 — Thought parking lot.** A jot box on the redirect page that saves thoughts to a
-  "for later" list instead of chasing them; the list is surfaced when the session ends.
-  *Deliverable: a nagging thought becomes a parked task, not a rabbit hole.*
+  *Deliverable: every redirect reminds you of your own goal.* ✅
+- **Stage 6 — Thought parking lot.** A jot box on the redirect page ("Was there something you
+  meant to do there?") that saves thoughts to a "for later" list instead of chasing them. The
+  list shows on the popup's Focus tab (only when non-empty), where each thought can be ticked off
+  or removed. (Will also feed the Stage-7 session-end summary once that exists.)
+  *Deliverable: a nagging thought becomes a parked task, not a rabbit hole.* ✅
 - **Stage 7 — Session wrap-up / win log.** Count focus time, sidesteps, and parked thoughts per
   session; show a gentle, additive-only summary (never a failure screen) at session end.
   *Deliverable: proof-it-works numbers + the data the bunny's mood runs on.*

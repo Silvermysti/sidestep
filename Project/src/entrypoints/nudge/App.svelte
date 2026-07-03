@@ -5,7 +5,7 @@
   // read the saved lists straight from storage and group them by site, then topic.
   import { onMount } from 'svelte';
   import { browser } from '#imports';
-  import { intention, lists } from '@/lib/storage';
+  import { intention, lists, parkingLot } from '@/lib/storage';
   import { groupLinksBySite, linkTitle, linkUrl } from '@/lib/sites';
 
   const params = new URLSearchParams(location.search);
@@ -17,6 +17,10 @@
   let groups = $state([]);
   let loaded = $state(false);
   let goal = $state(null); // the "one thing" for this session, if they set one
+  // The thought parking lot: whatever pulled them here, jotted down so it stops
+  // nagging. `parked` briefly confirms the save.
+  let parkDraft = $state('');
+  let parked = $state(false);
 
   onMount(async () => {
     const l = await lists.getValue();
@@ -25,6 +29,17 @@
     goal = iv?.text ? iv : null; // only show it if they actually wrote something
     loaded = true;
   });
+
+  // Save a stray thought to the parking lot, then clear the box and flash a note.
+  async function park() {
+    const text = parkDraft.trim();
+    if (!text) return;
+    const list = await parkingLot.getValue();
+    await parkingLot.setValue([...list, { text, savedAt: Date.now(), done: false }]);
+    parkDraft = '';
+    parked = true;
+    setTimeout(() => (parked = false), 2600);
+  }
 
   function prettyUrl(u) {
     try {
@@ -69,6 +84,23 @@
         <span class="intent-text">{goal.text}</span>
       </div>
     {/if}
+
+    <div class="park">
+      <label class="park-q" for="park-input">Was there something you meant to do there?</label>
+      <div class="park-row">
+        <input
+          id="park-input"
+          class="park-inp"
+          placeholder="Jot it down — e.g. reply to Sam's message"
+          bind:value={parkDraft}
+          onkeydown={(e) => e.key === 'Enter' && park()}
+        />
+        <button class="park-btn" onclick={park}>Park it</button>
+      </div>
+      {#if parked}
+        <span class="park-done">Saved — it'll be waiting in Sidestep after your session.</span>
+      {/if}
+    </div>
 
     {#if to}
       <button class="go" onclick={() => open(to)}>
@@ -204,6 +236,53 @@
     opacity: 0.85;
   }
   .intent-text { font-size: 17px; font-weight: 800; color: var(--ink); line-height: 1.3; }
+
+  /* Thought parking lot — dump the impulse that brought you here */
+  .park {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 13px 16px;
+    margin-bottom: 18px;
+  }
+  .park-q { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+  .park-row { display: flex; gap: 7px; }
+  .park-inp {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 13.5px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+    border-radius: 11px;
+    padding: 9px 12px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .park-inp:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-tint);
+  }
+  .park-inp::placeholder { color: var(--ink-faint); }
+  .park-btn {
+    border: 0;
+    border-radius: 11px;
+    padding: 0 16px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--accent-tint);
+    color: var(--accent-deep);
+    transition: filter 0.15s ease;
+  }
+  .park-btn:hover { filter: brightness(0.97); }
+  .park-done { font-size: 11.5px; font-weight: 700; color: var(--accent-deep); }
 
   /* Highlighted "next up" suggestion */
   .go {

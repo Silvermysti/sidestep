@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { browser } from '#imports';
-  import { settings, timer, lists, allowances, intention } from '@/lib/storage';
+  import { settings, timer, lists, allowances, intention, parkingLot } from '@/lib/storage';
   import { durationMs, formatMs } from '@/lib/timer';
   import { currentLinks, hostnameOf, linkTitle, linkUrl, normalizeUrl, siteToBlock } from '@/lib/sites';
 
@@ -14,6 +14,7 @@
   let s = $state(null);
   let l = $state(null);
   let al = $state(null); // active freedom windows: { site: expiry }
+  let pl = $state([]); // parked thoughts: [{ text, savedAt, done }]
   // `now` ticks every quarter second so the countdown updates smoothly (display
   // only — the real timing lives in `endsAt`).
   let now = $state(Date.now());
@@ -35,12 +36,14 @@
       al = await allowances.getValue();
       const i = await intention.getValue();
       intentionDraft = i.text;
+      pl = await parkingLot.getValue();
     })();
 
     const unwatchT = timer.watch((v) => (t = v));
     const unwatchS = settings.watch((v) => (s = v));
     const unwatchL = lists.watch((v) => (l = v));
     const unwatchA = allowances.watch((v) => (al = v));
+    const unwatchP = parkingLot.watch((v) => (pl = v));
     const ticker = setInterval(() => (now = Date.now()), 250);
 
     return () => {
@@ -48,6 +51,7 @@
       unwatchS();
       unwatchL();
       unwatchA();
+      unwatchP();
       clearInterval(ticker);
     };
   });
@@ -57,6 +61,15 @@
   async function saveIntention() {
     const text = intentionDraft.trim();
     await intention.setValue({ text, setAt: text ? Date.now() : null });
+  }
+
+  // Parked thoughts (saved from the redirect page). Ticking one off marks it done
+  // — a tiny, satisfying "handled it" — and the × drops it for good.
+  async function toggleParked(i) {
+    await parkingLot.setValue(pl.map((p, idx) => (idx === i ? { ...p, done: !p.done } : p)));
+  }
+  async function removeParked(i) {
+    await parkingLot.setValue(pl.filter((_, idx) => idx !== i));
   }
 
   // Derived display values — recompute automatically when their inputs change.
@@ -272,6 +285,28 @@
         {/if}
         <button class="ghost" disabled={t.status === 'idle'} onclick={() => send('reset')}>Reset</button>
       </div>
+
+      <!-- Thought parking lot: whatever you jotted on the redirect page waits here
+           for after your session. Only shows up once you've parked something. -->
+      {#if pl.length}
+        <div class="parked">
+          <div class="parked-head">Parked thoughts</div>
+          <ul class="parked-list">
+            {#each pl as p, i}
+              <li class:done={p.done}>
+                <button
+                  class="check"
+                  class:on={p.done}
+                  onclick={() => toggleParked(i)}
+                  aria-label={p.done ? 'Mark not done' : 'Mark done'}
+                >{p.done ? '✓' : ''}</button>
+                <span class="parked-text">{p.text}</span>
+                <button class="x" onclick={() => removeParked(i)} aria-label="Remove thought">×</button>
+              </li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
     {/if}
 
     <!-- ===================== LISTS PAGE ===================== -->
@@ -593,6 +628,48 @@
   /* Intention anchor */
   .intention { display: flex; flex-direction: column; gap: 7px; }
   .intention-q { font-size: 12px; font-weight: 700; color: var(--ink-soft); padding-left: 2px; }
+
+  /* Parked thoughts — the "for later" list, filled from the redirect page */
+  .parked {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow);
+    padding: 13px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .parked-head { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+  .parked-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  .parked-list li {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: var(--surface-2);
+    border-radius: 11px;
+    padding: 8px 10px;
+  }
+  .check {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .check.on { background: var(--accent); border-color: var(--accent); }
+  .parked-text { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+  .parked-list li.done .parked-text { color: var(--ink-faint); text-decoration: line-through; }
 
   /* Progress */
   .bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }

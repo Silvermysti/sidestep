@@ -63,6 +63,17 @@ export const intention = storage.defineItem('local:intention', {
   fallback: { text: '', setAt: null },
 });
 
+// The "thought parking lot" (Stage 6). When a distraction is intercepted, the
+// impulse often carries a real thought underneath ("reply to Sam", "check that
+// song"). A wandering brain keeps rehearsing that thought so it won't forget it,
+// which pulls it further off task. Letting the user dump it here — from the
+// redirect page — gets it out of their head; it waits in the popup for after the
+// session. A plain list, newest last.
+//   [{ text, savedAt, done }]  — done flips true when they tick it off later.
+export const parkingLot = storage.defineItem('local:parkingLot', {
+  fallback: [],
+});
+
 // Active "freedom windows" — the per-site escape hatch (Stage 3).
 //   { "<blocked site>": <expiry> }
 // where <expiry> is either a timestamp (ms) when the window ends, or the string
