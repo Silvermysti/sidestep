@@ -30,3 +30,6 @@ web-ext.config.ts
 
 # Stray archive — a zip of the project should not live inside the project
 project.zip
+
+# Large demo recordings — kept locally, too big for the repo
+*.mp4
