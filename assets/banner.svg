@@ -1,76 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" font-family="'Segoe UI', system-ui, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="380" viewBox="0 0 1280 380" font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#FFFDFA"/>
-      <stop offset="1" stop-color="#F7EDD9"/>
+      <stop offset="1" stop-color="#FBF3E4"/>
     </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#D9A35E"/>
+    <linearGradient id="path" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#E7C089"/>
       <stop offset="1" stop-color="#cf6b5e"/>
     </linearGradient>
-    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#9C6A2A" flood-opacity="0.18"/>
-    </filter>
   </defs>
 
-  <!-- background -->
-  <rect width="1280" height="420" fill="url(#bg)"/>
-  <rect width="1280" height="420" fill="none"/>
+  <rect width="1280" height="380" fill="url(#bg)"/>
 
-  <!-- decorative dashed 'path that sidesteps a wall' -->
-  <g stroke-linecap="round" fill="none">
-    <!-- the wall (distraction) -->
-    <rect x="905" y="150" width="26" height="120" rx="8" fill="#cf6b5e" opacity="0.9"/>
+  <!-- one clean idea: a route that steps around the block and keeps going -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- the obstacle -->
+    <rect x="632" y="232" width="16" height="86" rx="8" fill="#E4D5BC" stroke="none"/>
     <!-- the sidestepping route -->
-    <path d="M760 300 C 830 300, 850 300, 870 250 C 885 210, 885 160, 918 130 C 955 96, 1030 120, 1075 175"
-          stroke="url(#accent)" stroke-width="10" stroke-dasharray="2 20"/>
-    <circle cx="1075" cy="175" r="12" fill="#D9A35E"/>
-    <!-- little goal flag at the end -->
-    <path d="M1075 175 l0 -46" stroke="#9C6A2A" stroke-width="6"/>
-    <path d="M1075 129 l34 12 -34 12 z" fill="#7BC24A"/>
-  </g>
-
-  <!-- bunny (the calm body-double) -->
-  <g transform="translate(150 210)" filter="url(#soft)">
-    <ellipse cx="0" cy="90" rx="70" ry="16" fill="#9C6A2A" opacity="0.12"/>
-    <!-- ears -->
-    <ellipse cx="-22" cy="-70" rx="15" ry="46" fill="#FFFDFA" stroke="#E7D6BC" stroke-width="4"/>
-    <ellipse cx="18" cy="-64" rx="15" ry="44" fill="#FFFDFA" stroke="#E7D6BC" stroke-width="4"/>
-    <ellipse cx="-22" cy="-70" rx="7" ry="30" fill="#F3C9C2"/>
-    <ellipse cx="18" cy="-64" rx="7" ry="28" fill="#F3C9C2"/>
-    <!-- head/body -->
-    <circle cx="0" cy="18" r="58" fill="#FFFDFA" stroke="#E7D6BC" stroke-width="4"/>
-    <!-- eyes -->
-    <circle cx="-20" cy="10" r="6" fill="#5b4636"/>
-    <circle cx="20" cy="10" r="6" fill="#5b4636"/>
-    <!-- cheeks -->
-    <circle cx="-34" cy="26" r="9" fill="#F3C9C2" opacity="0.8"/>
-    <circle cx="34" cy="26" r="9" fill="#F3C9C2" opacity="0.8"/>
-    <!-- nose + content mouth -->
-    <path d="M0 22 l-6 6 h12 z" fill="#cf6b5e"/>
-    <path d="M-8 34 q8 8 16 0" stroke="#9C6A2A" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M470 300 H600 Q640 300 640 256 Q640 212 680 212 H812"
+          stroke="url(#path)" stroke-width="12"/>
+    <!-- arrowhead -->
+    <path d="M804 196 l26 16 -26 16" stroke="#cf6b5e" stroke-width="12"/>
+    <!-- start dot -->
+    <circle cx="470" cy="300" r="9" fill="#E7C089" stroke="none"/>
   </g>
 
   <!-- wordmark -->
-  <text x="300" y="185" font-size="98" font-weight="800" fill="#5b4636" letter-spacing="-2">Side<tspan fill="#cf6b5e">step</tspan></text>
-  <text x="304" y="245" font-size="30" font-weight="600" fill="#9C6A2A">Don’t block the distraction — sidestep it.</text>
+  <text x="640" y="170" text-anchor="middle" font-size="112" font-weight="800" letter-spacing="-3" fill="#4A3728">Side<tspan fill="#cf6b5e">step</tspan></text>
 
-  <!-- tagline chips -->
-  <g font-size="21" font-weight="700">
-    <g transform="translate(304 285)">
-      <rect x="0" y="0" width="215" height="44" rx="22" fill="#FFFDFA" stroke="#E7D6BC" stroke-width="2"/>
-      <text x="24" y="29" fill="#9C6A2A">🔁 Substitute, don’t block</text>
-    </g>
-    <g transform="translate(535 285)">
-      <rect x="0" y="0" width="176" height="44" rx="22" fill="#FFFDFA" stroke="#E7D6BC" stroke-width="2"/>
-      <text x="22" y="29" fill="#9C6A2A">🎯 Intention anchor</text>
-    </g>
-    <g transform="translate(727 285)">
-      <rect x="0" y="0" width="182" height="44" rx="22" fill="#FFFDFA" stroke="#E7D6BC" stroke-width="2"/>
-      <text x="22" y="29" fill="#9C6A2A">🗒️ Thought parking</text>
-    </g>
-  </g>
-
-  <!-- bottom accent bar -->
-  <rect x="0" y="410" width="1280" height="10" fill="url(#accent)"/>
+  <!-- tagline -->
+  <text x="640" y="352" text-anchor="middle" font-size="30" font-weight="600" fill="#9C6A2A" letter-spacing="0.3">Don’t block the distraction — sidestep it.</text>
 </svg>
