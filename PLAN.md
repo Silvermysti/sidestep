@@ -221,8 +221,11 @@ Built so there's something runnable early; the impressive mechanic comes before 
   *Deliverable: every redirect reminds you of your own goal.* ✅
 - **Stage 6 — Thought parking lot.** A jot box on the redirect page ("Was there something you
   meant to do there?") that saves thoughts to a "for later" list instead of chasing them. The
-  list shows on the popup's Focus tab (only when non-empty), where each thought can be ticked off
-  or removed. (Will also feed the Stage-7 session-end summary once that exists.)
+  same list lives on the popup's Focus tab, where a thought can also be **parked mid-session**
+  (a stray thought often arrives while you're heads-down, not only when you drift), ticked off,
+  or removed — removal asks "Remove this thought?" first so a stray click loses nothing. Newest
+  thoughts sit on top. Both entry points share one `parkThought()` helper so they can't drift
+  apart. (Will also feed the Stage-7 session-end summary once that exists.)
   *Deliverable: a nagging thought becomes a parked task, not a rabbit hole.* ✅
 - **Stage 7 — Session wrap-up / win log.** Count focus time, sidesteps, and parked thoughts per
   session; show a gentle, additive-only summary (never a failure screen) at session end.

@@ -5,7 +5,8 @@
   // read the saved lists straight from storage and group them by site, then topic.
   import { onMount } from 'svelte';
   import { browser } from '#imports';
-  import { intention, lists, parkingLot } from '@/lib/storage';
+  import { intention, lists } from '@/lib/storage';
+  import { parkThought } from '@/lib/parking';
   import { groupLinksBySite, linkTitle, linkUrl } from '@/lib/sites';
 
   const params = new URLSearchParams(location.search);
@@ -32,10 +33,7 @@
 
   // Save a stray thought to the parking lot, then clear the box and flash a note.
   async function park() {
-    const text = parkDraft.trim();
-    if (!text) return;
-    const list = await parkingLot.getValue();
-    await parkingLot.setValue([...list, { text, savedAt: Date.now(), done: false }]);
+    if (!(await parkThought(parkDraft))) return; // empty box — nothing to save
     parkDraft = '';
     parked = true;
     setTimeout(() => (parked = false), 2600);

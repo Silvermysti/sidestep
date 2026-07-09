@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { browser } from '#imports';
   import { settings, timer, lists, allowances, intention, parkingLot } from '@/lib/storage';
+  import { parkThought } from '@/lib/parking';
   import { durationMs, formatMs } from '@/lib/timer';
   import { currentLinks, hostnameOf, linkTitle, linkUrl, normalizeUrl, siteToBlock } from '@/lib/sites';
 
@@ -15,6 +16,11 @@
   let l = $state(null);
   let al = $state(null); // active freedom windows: { site: expiry }
   let pl = $state([]); // parked thoughts: [{ text, savedAt, done }]
+  let parkDraft = $state(''); // the "jot a thought" box on the Focus tab
+  // Which thought is asking "Remove this?" right now. We key on `savedAt` rather
+  // than the row number, because parking a new thought shifts every row down —
+  // an index would suddenly point at the wrong thought.
+  let confirmAt = $state(null);
   // `now` ticks every quarter second so the countdown updates smoothly (display
   // only — the real timing lives in `endsAt`).
   let now = $state(Date.now());
@@ -63,13 +69,26 @@
     await intention.setValue({ text, setAt: text ? Date.now() : null });
   }
 
-  // Parked thoughts (saved from the redirect page). Ticking one off marks it done
-  // — a tiny, satisfying "handled it" — and the × drops it for good.
+  // Parked thoughts — jotted here, or on the redirect page when a distraction is
+  // intercepted. Ticking one off marks it done: a tiny, satisfying "handled it".
+  async function addThought() {
+    if (await parkThought(parkDraft)) parkDraft = ''; // only clear if it saved
+  }
   async function toggleParked(i) {
     await parkingLot.setValue(pl.map((p, idx) => (idx === i ? { ...p, done: !p.done } : p)));
   }
+
+  // Removing asks first: the row swaps to "Remove this thought? Yes / No", so a
+  // stray click never silently loses something you meant to come back to.
+  function askRemove(savedAt) {
+    confirmAt = savedAt;
+  }
+  function cancelRemove() {
+    confirmAt = null;
+  }
   async function removeParked(i) {
     await parkingLot.setValue(pl.filter((_, idx) => idx !== i));
+    confirmAt = null;
   }
 
   // Derived display values — recompute automatically when their inputs change.
@@ -286,11 +305,24 @@
         <button class="ghost" disabled={t.status === 'idle'} onclick={() => send('reset')}>Reset</button>
       </div>
 
-      <!-- Thought parking lot: whatever you jotted on the redirect page waits here
-           for after your session. Only shows up once you've parked something. -->
-      {#if pl.length}
-        <div class="parked">
-          <div class="parked-head">Parked thoughts</div>
+      <!-- Thought parking lot: jot a stray thought mid-session so it stops nagging
+           you, and it waits here until you have time for it. Also filled from the
+           redirect page. The card always shows — otherwise there'd be nowhere to
+           type your first thought. -->
+      <div class="parked">
+        <div class="parked-head">Parked thoughts</div>
+
+        <div class="row">
+          <input
+            class="inp"
+            placeholder="Jot a thought for later…"
+            bind:value={parkDraft}
+            onkeydown={(e) => e.key === 'Enter' && addThought()}
+          />
+          <button class="mini" onclick={addThought}>Park</button>
+        </div>
+
+        {#if pl.length}
           <ul class="parked-list">
             {#each pl as p, i}
               <li class:done={p.done}>
@@ -301,12 +333,25 @@
                   aria-label={p.done ? 'Mark not done' : 'Mark done'}
                 >{p.done ? '✓' : ''}</button>
                 <span class="parked-text">{p.text}</span>
-                <button class="x" onclick={() => removeParked(i)} aria-label="Remove thought">×</button>
+                {#if confirmAt === p.savedAt}
+                  <span class="confirm">
+                    <span class="confirm-q">Remove?</span>
+                    <button class="confirm-yes" onclick={() => removeParked(i)}>Yes</button>
+                    <button class="confirm-no" onclick={cancelRemove}>No</button>
+                  </span>
+                {:else}
+                  <button
+                    class="remove"
+                    onclick={() => askRemove(p.savedAt)}
+                    aria-label="Remove thought">Remove</button>
+                {/if}
               </li>
             {/each}
           </ul>
-        </div>
-      {/if}
+        {:else}
+          <p class="parked-empty">Nothing parked yet. Jot a stray thought so it stops nagging you.</p>
+        {/if}
+      </div>
     {/if}
 
     <!-- ===================== LISTS PAGE ===================== -->
@@ -670,6 +715,43 @@
   .check.on { background: var(--accent); border-color: var(--accent); }
   .parked-text { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; color: var(--ink); }
   .parked-list li.done .parked-text { color: var(--ink-faint); text-decoration: line-through; }
+  .parked-empty { margin: 0; padding-left: 2px; font-size: 12px; font-weight: 600; color: var(--ink-faint); }
+
+  /* "Remove" — small red text at the right of each thought. This is its own class
+     on purpose: the shared `.x` button is also used by the Lists and Blocked tabs,
+     so restyling `.x` would have changed those too. */
+  .remove {
+    flex: none;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    color: #cf6b5e;
+    cursor: pointer;
+    padding: 0 2px;
+    opacity: 0.8;
+    transition: opacity 0.15s ease;
+  }
+  .remove:hover { opacity: 1; text-decoration: underline; }
+
+  /* The inline "are you sure?" that replaces Remove once it's clicked. */
+  .confirm { flex: none; display: flex; align-items: center; gap: 7px; }
+  .confirm-q { font-size: 11px; font-weight: 700; color: var(--ink-soft); }
+  .confirm-yes,
+  .confirm-no {
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    padding: 0 1px;
+  }
+  .confirm-yes { color: #cf6b5e; }
+  .confirm-no { color: var(--ink-soft); }
+  .confirm-yes:hover,
+  .confirm-no:hover { text-decoration: underline; }
 
   /* Progress */
   .bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
