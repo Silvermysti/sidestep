@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { browser } from '#imports';
   import { settings, timer, lists, allowances, intention, parkingLot } from '@/lib/storage';
   import { parkThought } from '@/lib/parking';
@@ -17,6 +17,8 @@
   let al = $state(null); // active freedom windows: { site: expiry }
   let pl = $state([]); // parked thoughts: [{ text, savedAt, done }]
   let parkDraft = $state(''); // the "jot a thought" box on the Focus tab
+  let adding = $state(false); // is that box open? kept shut so the list stays easy to read
+  let parkInput; // the <input> element, so we can focus it the moment it opens
   // Which thought is asking "Remove this?" right now. We key on `savedAt` rather
   // than the row number, because parking a new thought shifts every row down —
   // an index would suddenly point at the wrong thought.
@@ -71,8 +73,24 @@
 
   // Parked thoughts — jotted here, or on the redirect page when a distraction is
   // intercepted. Ticking one off marks it done: a tiny, satisfying "handled it".
+  // The ＋ toggles the jot box. It stays shut by default: an always-open input
+  // adds clutter to a list you mostly want to skim. `tick()` waits for Svelte to
+  // actually put the <input> on the page before we try to focus it.
+  async function toggleAdd() {
+    adding = !adding;
+    if (adding) {
+      await tick();
+      parkInput?.focus();
+    } else {
+      parkDraft = ''; // closing discards whatever was half-typed
+    }
+  }
+
+  // Save, then close the box again so we're back to a clean, readable list.
   async function addThought() {
-    if (await parkThought(parkDraft)) parkDraft = ''; // only clear if it saved
+    if (!(await parkThought(parkDraft))) return; // empty box — leave it open
+    parkDraft = '';
+    adding = false;
   }
   async function toggleParked(i) {
     await parkingLot.setValue(pl.map((p, idx) => (idx === i ? { ...p, done: !p.done } : p)));
@@ -310,17 +328,32 @@
            redirect page. The card always shows — otherwise there'd be nowhere to
            type your first thought. -->
       <div class="parked">
-        <div class="parked-head">Parked thoughts</div>
-
-        <div class="row">
-          <input
-            class="inp"
-            placeholder="Jot a thought for later…"
-            bind:value={parkDraft}
-            onkeydown={(e) => e.key === 'Enter' && addThought()}
-          />
-          <button class="mini" onclick={addThought}>Park</button>
+        <div class="parked-head">
+          <span>Parked thoughts</span>
+          <button
+            class="add"
+            class:open={adding}
+            onclick={toggleAdd}
+            aria-expanded={adding}
+            aria-label={adding ? 'Cancel adding a thought' : 'Add a thought'}
+          >＋</button>
         </div>
+
+        {#if adding}
+          <div class="row">
+            <input
+              class="inp"
+              bind:this={parkInput}
+              placeholder="Jot a thought for later…"
+              bind:value={parkDraft}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') addThought();
+                else if (e.key === 'Escape') toggleAdd();
+              }}
+            />
+            <button class="mini" onclick={addThought}>Park</button>
+          </div>
+        {/if}
 
         {#if pl.length}
           <ul class="parked-list">
@@ -349,7 +382,7 @@
             {/each}
           </ul>
         {:else}
-          <p class="parked-empty">Nothing parked yet. Jot a stray thought so it stops nagging you.</p>
+          <p class="parked-empty">Nothing parked yet. Tap ＋ to jot a stray thought.</p>
         {/if}
       </div>
     {/if}
@@ -685,7 +718,29 @@
     flex-direction: column;
     gap: 9px;
   }
-  .parked-head { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+  .parked-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+  }
+  /* The ＋ that reveals the jot box. Rotates into an × while the box is open. */
+  .add {
+    flex: none;
+    border: 0;
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 1px;
+    transition: transform 0.15s ease, color 0.15s ease;
+  }
+  .add:hover { color: var(--accent); }
+  .add.open { transform: rotate(45deg); color: var(--ink-faint); }
   .parked-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
   .parked-list li {
     display: flex;
