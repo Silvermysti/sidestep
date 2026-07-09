@@ -336,7 +336,7 @@
             onclick={toggleAdd}
             aria-expanded={adding}
             aria-label={adding ? 'Cancel adding a thought' : 'Add a thought'}
-          >＋</button>
+          >+</button>
         </div>
 
         {#if adding}
@@ -382,7 +382,7 @@
             {/each}
           </ul>
         {:else}
-          <p class="parked-empty">Nothing parked yet. Tap ＋ to jot a stray thought.</p>
+          <p class="parked-empty">Nothing parked yet. Tap + to jot a stray thought.</p>
         {/if}
       </div>
     {/if}
@@ -727,13 +727,18 @@
     font-weight: 700;
     color: var(--ink-soft);
   }
-  /* The ＋ that reveals the jot box. Rotates into an × while the box is open. */
+  /* The + that reveals the jot box. Rotates into an × while the box is open.
+     `font: inherit` matters: a <button> does NOT inherit the page font on its
+     own, so without it the + would render in the browser's default face at a
+     different weight from the "Parked thoughts" label beside it. */
   .add {
     flex: none;
     border: 0;
     background: transparent;
     color: var(--ink-soft);
-    font-size: 15px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
     line-height: 1;
     cursor: pointer;
     padding: 0 1px;
