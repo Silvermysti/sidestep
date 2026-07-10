@@ -61,10 +61,10 @@
 <main>
   <div class="sleeper-wrap">
     <img class="sleeper" src="/scene/sleeping.png" alt="" />
-    <!-- Sleepy "Z"s: they drift up and fade one after another, on a loop. -->
-    <span class="z z1">Z</span>
-    <span class="z z2">Z</span>
-    <span class="z z3">Z</span>
+    <!-- Sleepy pixel "Z"s: they drift up and fade one after another, on a loop. -->
+    <img class="z z1" src="/scene/z.png" alt="" />
+    <img class="z z2" src="/scene/z.png" alt="" />
+    <img class="z z3" src="/scene/z.png" alt="" />
   </div>
   <div class="card">
     <div class="brand-wrap">
@@ -183,16 +183,14 @@
      they appear one by one. A soft moonlit lavender with a faint glow. */
   .z {
     position: absolute;
-    color: #ECE8FF;
-    font-family: 'Fredoka', 'Nunito', sans-serif;
-    font-weight: 600;
-    text-shadow: 0 0 8px rgba(190, 178, 240, 0.6);
+    image-rendering: pixelated;                                 /* crisp pixel edges */
+    filter: drop-shadow(0 0 5px rgba(190, 178, 240, 0.55));     /* soft moonlit glow */
     opacity: 0;
     animation: zrise 3.9s ease-in-out infinite;
   }
-  .z1 { left: 26%; top: 8%;  font-size: 15px; animation-delay: 0s; }
-  .z2 { left: 37%; top: -8%; font-size: 20px; animation-delay: 1.3s; }
-  .z3 { left: 50%; top: -25%; font-size: 26px; animation-delay: 2.6s; }
+  .z1 { left: 47%; top: 4%;   width: 15px; animation-delay: 0s; }
+  .z2 { left: 57%; top: -12%; width: 20px; animation-delay: 1.3s; }
+  .z3 { left: 68%; top: -30%; width: 26px; animation-delay: 2.6s; }
   @keyframes zrise {
     0%   { opacity: 0; transform: translateY(6px) scale(0.7); }
     18%  { opacity: 1; }
