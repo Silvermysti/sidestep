@@ -47,6 +47,9 @@
       pl = await parkingLot.getValue();
     })();
 
+    // Warm the browser cache so the hop cycle doesn't flicker on its first loop.
+    for (const src of [...RUN_FRAMES, SIT_FRAME]) { const im = new Image(); im.src = src; }
+
     const unwatchT = timer.watch((v) => (t = v));
     const unwatchS = settings.watch((v) => (s = v));
     const unwatchL = lists.watch((v) => (l = v));
@@ -114,6 +117,26 @@
   let total = $derived(t && s ? durationMs(t.mode, s) : 1);
   let progress = $derived(total > 0 ? Math.min(1, 1 - remaining / total) : 0);
   let isFocus = $derived(t?.mode === 'focus');
+
+  // --- Bunny companion ---
+  // The 5-frame hop plays only while a focus session is actually running; the
+  // bunny sits still when idle, paused, or on a break (it's a "body-double" —
+  // it works alongside you, and rests when you rest). 119ms/frame ≈ 8fps.
+  const RUN_FRAMES = [
+    '/bunny/Running1.png', '/bunny/Running2.png', '/bunny/Running3.png',
+    '/bunny/Running4.png', '/bunny/Running5.png',
+  ];
+  const SIT_FRAME = '/bunny/Sitting.png';
+  let bunnyFrame = $state(0);
+  let bunnyRunning = $derived(t?.status === 'running' && isFocus);
+  // Start/stop the frame-swap loop whenever the running state flips. Returning
+  // the cleanup clears the old interval before the next run — no leaked timers.
+  $effect(() => {
+    if (!bunnyRunning) { bunnyFrame = 0; return; }
+    const id = setInterval(() => { bunnyFrame = (bunnyFrame + 1) % RUN_FRAMES.length; }, 119);
+    return () => clearInterval(id);
+  });
+
   let topic = $derived(l?.currentTopic ?? 'General');
   let links = $derived(l ? currentLinks(l) : []);
   let sites = $derived(s?.distractingSites ?? []);
@@ -284,8 +307,8 @@
         />
       </div>
 
-      <!-- The bunny's home. Empty for now — a faint silhouette marks where the
-           pet (the gamification layer, built last) will live and react. -->
+      <!-- The bunny's home. It hops through the run cycle while you're focusing
+           and sits still when idle/paused/on a break. -->
       <div class="habitat">
         <span class="habitat-topic">{topic}</span>
 
@@ -299,12 +322,7 @@
         </div>
 
         <div class="bunny-slot">
-          <svg class="bunny" viewBox="0 0 64 64" width="62" height="62" fill="currentColor" aria-hidden="true">
-            <ellipse cx="24" cy="15" rx="5" ry="13"/>
-            <ellipse cx="40" cy="15" rx="5" ry="13"/>
-            <circle cx="32" cy="40" r="17"/>
-          </svg>
-          <span class="bunny-label">Your bunny grows here as you focus</span>
+          <img class="bunny-sprite" src={bunnyRunning ? RUN_FRAMES[bunnyFrame] : SIT_FRAME} alt="" draggable="false" />
         </div>
 
         <div class="ground"></div>
@@ -677,20 +695,24 @@
   }
   .status { margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
 
-  /* Reserved bunny area, sitting on the grass. */
+  /* The bunny, standing on the grass. Its feet rest on the grass line; the baked
+     hop in the frames lifts it off and back as the run cycle plays. `bottom` is a
+     percentage so it tracks the square habitat at any popup size. */
   .bunny-slot {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 16px;
+    bottom: 24%;
     z-index: 1;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
+    justify-content: center;
   }
-  .bunny { color: var(--accent); opacity: 0.28; }
-  .bunny-label { font-size: 11.5px; font-weight: 600; color: var(--accent-deep); opacity: 0.7; }
+  .bunny-sprite {
+    width: 120px;
+    height: auto;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
 
   /* The grass band. */
   .ground {
