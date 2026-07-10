@@ -59,6 +59,7 @@
 </script>
 
 <main>
+  <img class="sleeper" src="/scene/sleeping.png" alt="" />
   <div class="card">
     <div class="brand-wrap">
       <svg class="sprout" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
@@ -151,14 +152,31 @@
   main {
     width: 100%;
     max-width: 520px;
+    position: relative; /* anchor for the sleeping bunny resting on the card */
+  }
+
+  /* The sleeping bunny lies on top of the card's front edge — most of it above
+     the card, its body dipping onto the top so it reads as resting there. */
+  .sleeper {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -84%);
+    width: 172px;
+    height: auto;
+    z-index: 3;
+    pointer-events: none;
+    filter: drop-shadow(0 6px 10px rgba(20, 15, 40, 0.5));
   }
 
   .card {
+    position: relative;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--r-lg);
     box-shadow: var(--shadow);
-    padding: 30px 30px 24px;
+    backdrop-filter: blur(5px); /* frosts the night sky behind the card */
+    padding: 34px 30px 24px;
     text-align: center;
   }
 
@@ -258,7 +276,7 @@
     border-radius: var(--r);
     padding: 15px 20px;
     background: var(--accent);
-    color: #fff;
+    color: #211C3D; /* dark ink reads best on the light periwinkle accent */
     display: flex;
     flex-direction: column;
     align-items: flex-start;

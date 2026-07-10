@@ -8,21 +8,25 @@
 @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/fredoka-600.woff2') format('woff2'); }
 
 :root {
-  --bg: #FAF5EE;
-  --surface: #FFFFFF;
-  --surface-2: #F4ECDF;
-  --surface-3: #EFE6D5;
-  --line: #ECE3D4;
-  --ink: #463F36;
-  --ink-soft: #8E8171;
-  --ink-faint: #B9AD9B;
+  /* Night palette — the redirect page is a calm, sleepy night sky so being
+     stopped feels restful, not punishing. Colours are sampled from the pixel-art
+     night background so the card blends into the scene. Redefining these shared
+     variables flips the whole card (and everything in it) to night mode at once. */
+  --bg: #211C3D;
+  --surface: rgba(59, 51, 104, 0.82);  /* the card — a translucent night purple */
+  --surface-2: #4A4080;                /* insets: park box, link rows */
+  --surface-3: #554A90;
+  --line: rgba(205, 196, 247, 0.16);
+  --ink: #ECE9FF;
+  --ink-soft: #BDB4E6;
+  --ink-faint: #8A82B0;
 
-  --accent: #6FAC8C;        /* sage — same focus accent as the popup */
-  --accent-deep: #3E7A5C;
-  --accent-tint: #E8F1EB;
+  --accent: #8C81CC;        /* periwinkle — the light clouds / moonlight */
+  --accent-deep: #CFC6F7;   /* lighter lavender, for text on tinted surfaces */
+  --accent-tint: rgba(140, 129, 204, 0.22);
 
-  --shadow-sm: 0 1px 3px rgba(78, 62, 40, 0.07);
-  --shadow: 0 14px 40px rgba(78, 62, 40, 0.12), 0 3px 9px rgba(78, 62, 40, 0.05);
+  --shadow-sm: 0 1px 3px rgba(10, 6, 28, 0.4);
+  --shadow: 0 20px 60px rgba(10, 6, 28, 0.55), 0 3px 9px rgba(10, 6, 28, 0.4);
 
   --r-lg: 22px;
   --r: 14px;
@@ -30,7 +34,7 @@
 
   font-family: 'Nunito', ui-rounded, system-ui, -apple-system, sans-serif;
   line-height: 1.5;
-  color-scheme: light;
+  color-scheme: dark;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -40,10 +44,12 @@ html, body { margin: 0; min-height: 100vh; }
 
 body {
   color: var(--ink);
-  background:
-    radial-gradient(150% 80% at 50% -10%, #FFFDF9 0%, var(--bg) 55%);
+  /* The pixel-art night sky, kept crisp (pixelated) and covering the viewport.
+     Fixed so it stays put if the page scrolls. Dark fallback behind it. */
+  background: var(--bg) url('/scene/night-bg.png') center / cover no-repeat fixed;
+  image-rendering: pixelated;
   display: flex;
-  align-items: center;
+  align-items: flex-start;      /* room above the card for the sleeping bunny */
   justify-content: center;
-  padding: 24px;
+  padding: 112px 24px 40px;
 }
