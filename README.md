@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="Sidestep — don't block the distraction, sidestep it" width="100%">
+  <img src="assets/banner.png" alt="Sidestep — don't block the distraction, sidestep it" width="100%">
 </p>
 
 <h1 align="center">Sidestep</h1>
@@ -103,7 +103,7 @@ HackWave/
 │        └─ timer.js           # pure timer logic
 ├─ PLAN.md                     # full product plan & build stages
 ├─ ARCHITECTURE.md             # how the pieces fit together
-└─ assets/banner.svg           # the banner above
+└─ assets/banner.png           # the banner above
 ```
 
 ---
