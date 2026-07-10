@@ -25,10 +25,11 @@ export function getRemainingMs(t, now = Date.now()) {
   return t.remainingMs;
 }
 
-// idle/paused -> running from the start of a fresh session.
+// idle/paused -> running from the start of a fresh focus session. Focus-only, so
+// we always start in focus, never inheriting a stale 'break' from saved state.
 export function startState(t, settings, now = Date.now()) {
-  const dur = durationMs(t.mode, settings);
-  return { ...t, status: 'running', endsAt: now + dur, remainingMs: dur };
+  const dur = durationMs('focus', settings);
+  return { ...t, mode: 'focus', status: 'running', endsAt: now + dur, remainingMs: dur };
 }
 
 // running -> paused, remembering exactly how much was left.
@@ -48,14 +49,10 @@ export function resumeState(t, now = Date.now()) {
   return { ...t, status: 'running', endsAt: now + t.remainingMs };
 }
 
-// back to a fresh, idle session of the current mode.
+// back to a fresh, idle focus session. Sidestep is focus-only, so reset always
+// returns to focus — even if an old saved state still carried mode: 'break'.
 export function resetState(t, settings) {
-  return { ...t, status: 'idle', endsAt: null, remainingMs: durationMs(t.mode, settings) };
-}
-
-// switch between focus and break (only meaningful while idle).
-export function setModeState(t, settings, mode) {
-  return { mode, status: 'idle', endsAt: null, remainingMs: durationMs(mode, settings) };
+  return { mode: 'focus', status: 'idle', endsAt: null, remainingMs: durationMs('focus', settings) };
 }
 
 // a session finished: sit idle, ready to start again. Sidestep is focus-only,
