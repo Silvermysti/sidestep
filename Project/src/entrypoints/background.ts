@@ -23,7 +23,6 @@ import {
   pauseState,
   resumeState,
   resetState,
-  setModeState,
   completeState,
 } from '@/lib/timer';
 
@@ -198,9 +197,6 @@ async function handleCommand(message: any) {
     case 'reset':
       next = resetState(t, s);
       break;
-    case 'setMode':
-      next = setModeState(t, s, message.mode);
-      break;
     default:
       return;
   }
@@ -262,23 +258,19 @@ async function syncAlarm(t: any) {
   }
 }
 
-// A session reached zero: flip focus<->break, go idle, and notify the user.
+// A session reached zero: go idle (ready for a fresh focus session) and notify.
 async function handleSessionEnd() {
   const [t, s] = await Promise.all([timer.getValue(), settings.getValue()]);
-  const finishedMode = t.mode;
   await timer.setValue(completeState(t, s));
   await browser.alarms.clear(TIMER_ALARM);
-  notify(finishedMode);
+  notify();
 }
 
-function notify(finishedMode: string) {
-  const isFocus = finishedMode === 'focus';
+function notify() {
   browser.notifications.create({
     type: 'basic',
     iconUrl: browser.runtime.getURL('/icon/128.png'),
-    title: isFocus ? 'Focus session complete' : 'Break over',
-    message: isFocus
-      ? 'Nice work. Time for a short break.'
-      : 'Break done — ready to focus again?',
+    title: 'Focus session complete',
+    message: 'Nice work — ready for another round?',
   });
 }

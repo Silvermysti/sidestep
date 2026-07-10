@@ -270,19 +270,6 @@
   {#if t && s && l}
     <!-- ===================== FOCUS PAGE ===================== -->
     {#if tab === 'focus'}
-      <div class="seg" role="tablist">
-        <button
-          class:active={isFocus}
-          disabled={t.status !== 'idle'}
-          onclick={() => send('setMode', { mode: 'focus' })}
-        >Focus</button>
-        <button
-          class:active={!isFocus}
-          disabled={t.status !== 'idle'}
-          onclick={() => send('setMode', { mode: 'break' })}
-        >Break</button>
-      </div>
-
       {#if allowed.length}
         <div class="freedom-banner">
           {#each allowed as a}
@@ -625,30 +612,6 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
-  /* Segmented Focus/Break control */
-  .seg {
-    display: flex;
-    gap: 4px;
-    background: var(--surface-2);
-    padding: 4px;
-    border-radius: var(--r);
-  }
-  .seg button {
-    flex: 1;
-    border: 0;
-    border-radius: 10px;
-    padding: 8px 0;
-    font: inherit;
-    font-size: 12.5px;
-    font-weight: 700;
-    color: var(--ink-soft);
-    background: transparent;
-    cursor: pointer;
-    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
-  }
-  .seg button.active { background: var(--surface); color: var(--accent-deep); box-shadow: var(--shadow-sm); }
-  .seg button:disabled { cursor: default; }
 
   /* The bunny habitat — the hero of the Focus page. A soft meadow: cream "sky"
      fading to a tinted "grass" band at the bottom. The clock floats in the sky;

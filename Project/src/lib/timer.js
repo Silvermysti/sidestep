@@ -58,10 +58,11 @@ export function setModeState(t, settings, mode) {
   return { mode, status: 'idle', endsAt: null, remainingMs: durationMs(mode, settings) };
 }
 
-// a session finished: flip focus<->break and sit idle, ready to start.
+// a session finished: sit idle, ready to start again. Sidestep is focus-only,
+// so we always return to a fresh focus session — the timer always starts from
+// focus, never from a break.
 export function completeState(t, settings) {
-  const nextMode = t.mode === 'focus' ? 'break' : 'focus';
-  return { mode: nextMode, status: 'idle', endsAt: null, remainingMs: durationMs(nextMode, settings) };
+  return { mode: 'focus', status: 'idle', endsAt: null, remainingMs: durationMs('focus', settings) };
 }
 
 // turn milliseconds into "MM:SS" for display.
