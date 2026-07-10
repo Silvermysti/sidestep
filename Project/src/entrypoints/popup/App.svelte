@@ -1,7 +1,7 @@
 <script>
   import { onMount, tick } from 'svelte';
   import { browser } from '#imports';
-  import { settings, timer, lists, allowances, intention, parkingLot } from '@/lib/storage';
+  import { settings, timer, lists, allowances, parkingLot } from '@/lib/storage';
   import { parkThought } from '@/lib/parking';
   import { durationMs, formatMs } from '@/lib/timer';
   import { currentLinks, hostnameOf, linkTitle, linkUrl, normalizeUrl, siteToBlock } from '@/lib/sites';
@@ -32,9 +32,6 @@
   let linkDraft = $state('');
   let titleDraft = $state('');
   let siteDraft = $state('');
-  // The "one thing" for this session — a draft so typing feels instant; we save
-  // it straight to storage as it changes.
-  let intentionDraft = $state('');
 
   onMount(() => {
     (async () => {
@@ -42,8 +39,6 @@
       s = await settings.getValue();
       l = await lists.getValue();
       al = await allowances.getValue();
-      const i = await intention.getValue();
-      intentionDraft = i.text;
       pl = await parkingLot.getValue();
     })();
 
@@ -66,13 +61,6 @@
       clearInterval(ticker);
     };
   });
-
-  // Save the intention as the user types. Kept trivially simple — an empty goal
-  // clears `setAt` so nothing stale lingers. Never required; never blocks Start.
-  async function saveIntention() {
-    const text = intentionDraft.trim();
-    await intention.setValue({ text, setAt: text ? Date.now() : null });
-  }
 
   // Parked thoughts — jotted here, or on the redirect page when a distraction is
   // intercepted. Ticking one off marks it done: a tiny, satisfying "handled it".
@@ -280,19 +268,6 @@
           {/each}
         </div>
       {/if}
-
-      <!-- Intention anchor: the "one thing" for this session. Optional — it just
-           reminds you of your own goal on the redirect page if you drift. -->
-      <div class="intention">
-        <label class="intention-q" for="intention-input">What's the one thing?</label>
-        <input
-          id="intention-input"
-          class="inp full"
-          placeholder="e.g. finish the biology notes"
-          bind:value={intentionDraft}
-          oninput={saveIntention}
-        />
-      </div>
 
       <!-- The bunny's home. It hops through the run cycle while you're focusing
            and sits still when idle/paused/on a break. -->
@@ -687,10 +662,6 @@
     background: color-mix(in srgb, var(--accent) 20%, transparent);
     border-top: 2px solid color-mix(in srgb, var(--accent) 34%, transparent);
   }
-
-  /* Intention anchor */
-  .intention { display: flex; flex-direction: column; gap: 7px; }
-  .intention-q { font-size: 12px; font-weight: 700; color: var(--ink-soft); padding-left: 2px; }
 
   /* Parked thoughts — the "for later" list, filled from the redirect page */
   .parked {

@@ -53,16 +53,6 @@ export const lists = storage.defineItem('local:lists', {
   },
 });
 
-// The user's "one thing" for the current focus session (Stage 5 — intention
-// anchor). We show this back to them on the redirect page, so a wandering brain
-// is reminded of its own goal at the exact moment it's drifting.
-//   text  : what they're here to do ("finish the biology notes")
-//   setAt : timestamp (ms) it was last set, or null when empty
-// Entirely optional — an empty intention is fine; we never block on it.
-export const intention = storage.defineItem('local:intention', {
-  fallback: { text: '', setAt: null },
-});
-
 // The "thought parking lot" (Stage 6). When a distraction is intercepted, the
 // impulse often carries a real thought underneath ("reply to Sam", "check that
 // song"). A wandering brain keeps rehearsing that thought so it won't forget it,

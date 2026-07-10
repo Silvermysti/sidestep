@@ -5,7 +5,7 @@
   // read the saved lists straight from storage and group them by site, then topic.
   import { onMount } from 'svelte';
   import { browser } from '#imports';
-  import { intention, lists } from '@/lib/storage';
+  import { lists } from '@/lib/storage';
   import { parkThought } from '@/lib/parking';
   import { groupLinksBySite, linkTitle, linkUrl } from '@/lib/sites';
 
@@ -17,7 +17,6 @@
 
   let groups = $state([]);
   let loaded = $state(false);
-  let goal = $state(null); // the "one thing" for this session, if they set one
   // The thought parking lot: whatever pulled them here, jotted down so it stops
   // nagging. `parked` briefly confirms the save.
   let parkDraft = $state('');
@@ -26,8 +25,6 @@
   onMount(async () => {
     const l = await lists.getValue();
     groups = groupLinksBySite(l, from); // site you reached for floats to front
-    const iv = await intention.getValue();
-    goal = iv?.text ? iv : null; // only show it if they actually wrote something
     loaded = true;
   });
 
@@ -75,13 +72,6 @@
 
     <h1>You were heading to <span class="from">{from}</span></h1>
     <p class="sub">You're in a focus session. Here's what you actually wanted to get to.</p>
-
-    {#if goal}
-      <div class="intent">
-        <span class="intent-label">You wanted to</span>
-        <span class="intent-text">{goal.text}</span>
-      </div>
-    {/if}
 
     <div class="park">
       <label class="park-q" for="park-input">Was there something you meant to do there?</label>
@@ -212,28 +202,6 @@
     color: var(--ink-soft);
     font-size: 15px;
   }
-
-  /* Intention reminder — your own goal, shown back to you */
-  .intent {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    text-align: left;
-    background: var(--accent-tint);
-    border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
-    border-radius: var(--r);
-    padding: 13px 16px;
-    margin-bottom: 18px;
-  }
-  .intent-label {
-    font-size: 10.5px;
-    font-weight: 800;
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-    color: var(--accent-deep);
-    opacity: 0.85;
-  }
-  .intent-text { font-size: 17px; font-weight: 800; color: var(--ink); line-height: 1.3; }
 
   /* Thought parking lot — dump the impulse that brought you here */
   .park {
