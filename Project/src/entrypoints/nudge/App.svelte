@@ -161,8 +161,8 @@
     position: absolute;
     top: 0;
     left: 50%;
-    transform: translate(-50%, -84%);
-    width: 172px;
+    transform: translate(-50%, -80%);
+    width: 236px;
     height: auto;
     z-index: 3;
     pointer-events: none;
@@ -235,14 +235,16 @@
   }
   .park-q { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
   .park-row { display: flex; gap: 7px; }
+  /* The jot field is a solid light panel with dark text — a clear, familiar place
+     to type, standing out against the dark night card. */
   .park-inp {
     flex: 1;
     min-width: 0;
     font: inherit;
     font-size: 13.5px;
-    color: var(--ink);
-    background: var(--surface);
-    border: 1.5px solid var(--line);
+    color: #2E2748;
+    background: #F5F3FC;
+    border: 1.5px solid transparent;
     border-radius: 11px;
     padding: 9px 12px;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -252,7 +254,7 @@
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-tint);
   }
-  .park-inp::placeholder { color: var(--ink-faint); }
+  .park-inp::placeholder { color: #9089B5; }
   .park-btn {
     border: 0;
     border-radius: 11px;

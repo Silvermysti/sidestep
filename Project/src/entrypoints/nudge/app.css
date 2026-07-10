@@ -51,5 +51,5 @@ body {
   display: flex;
   align-items: flex-start;      /* room above the card for the sleeping bunny */
   justify-content: center;
-  padding: 112px 24px 40px;
+  padding: 168px 24px 40px;     /* card sits lower, leaving sky for the big bunny */
 }
