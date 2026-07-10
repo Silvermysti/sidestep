@@ -594,7 +594,7 @@
   .habitat {
     position: relative;
     width: 100%;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 4 / 5;
     border-radius: var(--r-lg);
     border: 1px solid var(--line);
     background: linear-gradient(180deg, #FFFDFA 0%, var(--accent-tint) 100%);
@@ -621,17 +621,17 @@
   }
 
   /* Timer "heads-up display" floating near the top of the habitat. */
-  .hud { position: absolute; top: 26px; left: 0; right: 0; text-align: center; z-index: 1; }
+  .hud { position: absolute; top: 22px; left: 0; right: 0; text-align: center; z-index: 1; }
   .time {
     font-family: 'Fredoka', 'Nunito', sans-serif;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
-    font-size: 50px;
+    font-size: 52px;
     line-height: 1;
     letter-spacing: 1px;
     color: var(--ink);
   }
-  .status { margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+  .status { margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
 
   /* The bunny, standing on the grass. Its feet rest on the grass line; the baked
      hop in the frames lifts it off and back as the run cycle plays. `bottom` is a
@@ -640,13 +640,13 @@
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 24%;
+    bottom: 20%;
     z-index: 1;
     display: flex;
     justify-content: center;
   }
   .bunny-sprite {
-    width: 120px;
+    width: 190px;
     height: auto;
     user-select: none;
     -webkit-user-drag: none;
@@ -658,7 +658,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    height: 30%;
+    height: 26%;
     background: color-mix(in srgb, var(--accent) 20%, transparent);
     border-top: 2px solid color-mix(in srgb, var(--accent) 34%, transparent);
   }
