@@ -59,7 +59,13 @@
 </script>
 
 <main>
-  <img class="sleeper" src="/scene/sleeping.png" alt="" />
+  <div class="sleeper-wrap">
+    <img class="sleeper" src="/scene/sleeping.png" alt="" />
+    <!-- Sleepy "Z"s: they drift up and fade one after another, on a loop. -->
+    <span class="z z1">Z</span>
+    <span class="z z2">Z</span>
+    <span class="z z3">Z</span>
+  </div>
   <div class="card">
     <div class="brand-wrap">
       <svg class="sprout" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
@@ -157,16 +163,41 @@
 
   /* The sleeping bunny lies on top of the card's front edge — most of it above
      the card, its body dipping onto the top so it reads as resting there. */
-  .sleeper {
+  .sleeper-wrap {
     position: absolute;
     top: 0;
     left: 50%;
     transform: translate(-50%, -80%);
     width: 236px;
-    height: auto;
     z-index: 3;
     pointer-events: none;
+  }
+  .sleeper {
+    display: block;
+    width: 100%;
+    height: auto;
     filter: drop-shadow(0 6px 10px rgba(20, 15, 40, 0.5));
+  }
+
+  /* The sleepy Z's rise up from above the bunny's head and fade, staggered so
+     they appear one by one. A soft moonlit lavender with a faint glow. */
+  .z {
+    position: absolute;
+    color: #ECE8FF;
+    font-family: 'Fredoka', 'Nunito', sans-serif;
+    font-weight: 600;
+    text-shadow: 0 0 8px rgba(190, 178, 240, 0.6);
+    opacity: 0;
+    animation: zrise 3.9s ease-in-out infinite;
+  }
+  .z1 { left: 26%; top: 8%;  font-size: 15px; animation-delay: 0s; }
+  .z2 { left: 37%; top: -8%; font-size: 20px; animation-delay: 1.3s; }
+  .z3 { left: 50%; top: -25%; font-size: 26px; animation-delay: 2.6s; }
+  @keyframes zrise {
+    0%   { opacity: 0; transform: translateY(6px) scale(0.7); }
+    18%  { opacity: 1; }
+    55%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-18px) scale(1.05); }
   }
 
   .card {
