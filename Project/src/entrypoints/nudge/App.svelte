@@ -190,7 +190,7 @@
     background-size: 140.62vw 46.872vw;  /* one tile, leaving 7% bottom padding */
     image-rendering: pixelated;          /* keep the pixel-art edges crisp */
     opacity: 0.92;
-    animation: cloud-drift 140s linear infinite;  /* slow, gentle drift */
+    animation: cloud-drift 233s linear infinite;  /* slow, gentle drift */
   }
   @keyframes cloud-drift {
     from { background-position-x: 0; }
