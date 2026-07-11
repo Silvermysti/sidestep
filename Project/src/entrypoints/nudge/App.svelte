@@ -176,21 +176,25 @@
     top: 40px;
     left: 0;
     width: 100%;
-    /* One cloud tile spans the full page width (100vw), matching the sky
-       background's width so the clouds read at the scene's own scale. The band
-       is exactly one tile tall (the strip's 263:947 aspect → 27.8% of width). */
-    height: 27.8vw;
+    /* The cloud strip is scaled to nearly fill the sky's height, but stops short
+       of the bottom to leave breathing room. The region is the sky's height
+       (50.4vw: sky is 1767x890 → 890/1767 of its 100vw width). We reserve 7% of
+       that height (3.528vw) as bottom padding, so the clouds fill the top
+       50.4 − 3.528 = 46.872vw. The tile is 2172x724 (exactly 3x wider than
+       tall), so at that height it is 46.872 × 3 = 140.62vw wide. Anchored to the
+       top (default position), the reserved space falls at the bottom. */
+    height: 50.4vw;
     z-index: -1;
     pointer-events: none;
     background: url('/scene/clouds.png') repeat-x;
-    background-size: 100vw auto;        /* one tile = full background width */
-    image-rendering: pixelated;        /* keep the pixel-art edges crisp */
+    background-size: 140.62vw 46.872vw;  /* one tile, leaving 7% bottom padding */
+    image-rendering: pixelated;          /* keep the pixel-art edges crisp */
     opacity: 0.92;
-    animation: cloud-drift 80s linear infinite;
+    animation: cloud-drift 140s linear infinite;  /* slow, gentle drift */
   }
   @keyframes cloud-drift {
     from { background-position-x: 0; }
-    to   { background-position-x: -100vw; }  /* one full tile → seamless loop */
+    to   { background-position-x: -140.62vw; }  /* one full tile → seamless loop */
   }
   /* Respect users who prefer no motion: park the clouds in place. */
   @media (prefers-reduced-motion: reduce) {
