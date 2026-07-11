@@ -44,9 +44,10 @@ html, body { margin: 0; min-height: 100vh; }
 
 body {
   color: var(--ink);
-  /* The pixel-art night sky, kept crisp (pixelated) and covering the viewport.
-     Fixed so it stays put if the page scrolls. Dark fallback behind it. */
-  background: var(--bg) url('/scene/night-bg.png') center / cover no-repeat fixed;
+  /* The pixel-art night sky WITHOUT clouds — kept crisp (pixelated) and covering
+     the viewport. Fixed so it stays put if the page scrolls. The clouds are a
+     separate drifting layer (see .clouds in the page). Dark fallback behind it. */
+  background: var(--bg) url('/scene/sky.png') center / cover no-repeat fixed;
   image-rendering: pixelated;
   display: flex;
   align-items: flex-start;      /* room above the card for the sleeping bunny */

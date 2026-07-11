@@ -58,6 +58,11 @@
   }
 </script>
 
+<!-- Clouds drift slowly leftward across the night sky, behind everything. The
+     cloud strip tiles seamlessly, so repeating it and sliding by one tile-width
+     loops forever with no visible seam. -->
+<div class="clouds" aria-hidden="true"></div>
+
 <main>
   <div class="sleeper-wrap">
     <img class="sleeper" src="/scene/sleeping.png" alt="" />
@@ -159,6 +164,37 @@
     width: 100%;
     max-width: 520px;
     position: relative; /* anchor for the sleeping bunny resting on the card */
+  }
+
+  /* The drifting cloud band. Fixed to the viewport, sitting in the upper sky
+     behind the card (negative z-index keeps it above the sky background but
+     below all content, so the card's frosted blur catches it too). It repeats
+     horizontally and slides left by exactly one tile-width on an endless loop —
+     because the strip is horizontally continuous, the wrap is seamless. */
+  .clouds {
+    position: fixed;
+    top: 40px;
+    left: 0;
+    width: 100%;
+    /* One cloud tile spans the full page width (100vw), matching the sky
+       background's width so the clouds read at the scene's own scale. The band
+       is exactly one tile tall (the strip's 263:947 aspect → 27.8% of width). */
+    height: 27.8vw;
+    z-index: -1;
+    pointer-events: none;
+    background: url('/scene/clouds.png') repeat-x;
+    background-size: 100vw auto;        /* one tile = full background width */
+    image-rendering: pixelated;        /* keep the pixel-art edges crisp */
+    opacity: 0.92;
+    animation: cloud-drift 80s linear infinite;
+  }
+  @keyframes cloud-drift {
+    from { background-position-x: 0; }
+    to   { background-position-x: -100vw; }  /* one full tile → seamless loop */
+  }
+  /* Respect users who prefer no motion: park the clouds in place. */
+  @media (prefers-reduced-motion: reduce) {
+    .clouds { animation: none; }
   }
 
   /* The sleeping bunny lies on top of the card's front edge — most of it above
