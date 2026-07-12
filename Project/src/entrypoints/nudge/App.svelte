@@ -9,7 +9,7 @@
   import { browser } from '#imports';
   import { lists } from '@/lib/storage';
   import { parkThought } from '@/lib/parking';
-  import { groupLinksBySite, linkTitle, linkUrl } from '@/lib/sites';
+  import { groupLinksBySite, linkTitle, linkUrl, siteGroup } from '@/lib/sites';
 
   const params = new URLSearchParams(location.search);
   const from = params.get('from') ?? 'that site';
@@ -19,6 +19,10 @@
 
   let groups = $state([]);
   let loaded = $state(false);
+  // Has the user saved anything for the site they just reached for? If not we say
+  // so plainly, because the "Next up" link they're being offered came from a
+  // different site (the fallback) and it would be confusing not to mention it.
+  let hasFromLinks = $derived(groups.some((g) => g.key === siteGroup(from).key));
   // The thought parking lot: whatever pulled them here, jotted down so it stops
   // nagging. `parked` briefly confirms the save.
   let parkDraft = $state('');
@@ -114,6 +118,13 @@
     {/if}
 
     {#if loaded}
+      <!-- Nothing saved for the site they reached for. Say exactly that, rather
+           than a generic "you have no links" — anything they've saved for OTHER
+           sites is still offered below, so a blanket empty message would be a lie. -->
+      {#if !hasFromLinks}
+        <div class="empty">No saved focus links from this site yet.</div>
+      {/if}
+
       {#if groups.length}
         <div class="menu">
           {#each groups as g}
@@ -133,12 +144,6 @@
               </ul>
             </section>
           {/each}
-        </div>
-      {:else}
-        <div class="empty">
-          You haven't saved any focus links yet. Open Sidestep and add a few pages you
-          actually want to get to. Save a YouTube link and it's what you'll be offered
-          the next time YouTube pulls at you.
         </div>
       {/if}
     {/if}
