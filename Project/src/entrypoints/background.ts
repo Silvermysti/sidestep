@@ -258,19 +258,26 @@ async function syncAlarm(t: any) {
   }
 }
 
-// A session reached zero: go idle (ready for a fresh focus session) and notify.
+// A session reached zero. `completeState` decides what comes next: a finished
+// focus session rolls straight into a running break; a finished break returns to
+// an idle focus session. Either way we re-sync the alarm — that's what schedules
+// the wake-up for the END of the break (and clears it when we go idle).
 async function handleSessionEnd() {
   const [t, s] = await Promise.all([timer.getValue(), settings.getValue()]);
-  await timer.setValue(completeState(t, s));
-  await browser.alarms.clear(TIMER_ALARM);
-  notify();
+  const next = completeState(t, s);
+  await timer.setValue(next);
+  await syncAlarm(next);
+  notify(t.mode);
 }
 
-function notify() {
+function notify(finished: string) {
+  const breakStarting = finished === 'focus';
   browser.notifications.create({
     type: 'basic',
     iconUrl: browser.runtime.getURL('/icon/128.png'),
-    title: 'Focus session complete',
-    message: 'Nice work — ready for another round?',
+    title: breakStarting ? 'Focus session complete' : 'Break over',
+    message: breakStarting
+      ? 'Nice work. Your break has started, go rest.'
+      : 'Ready when you are for another round.',
   });
 }

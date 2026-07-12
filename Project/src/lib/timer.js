@@ -55,10 +55,16 @@ export function resetState(t, settings) {
   return { mode: 'focus', status: 'idle', endsAt: null, remainingMs: durationMs('focus', settings) };
 }
 
-// a session finished: sit idle, ready to start again. Sidestep is focus-only,
-// so we always return to a fresh focus session — the timer always starts from
-// focus, never from a break.
-export function completeState(t, settings) {
+// a session finished. What comes next depends on what just ended:
+//   focus done  -> the break starts immediately and runs on its own
+//   break done  -> back to a fresh, idle focus session, waiting for Start
+// The cycle always begins at focus, so a saved 'break' can never be inherited
+// as the starting mode.
+export function completeState(t, settings, now = Date.now()) {
+  if (t.mode === 'focus') {
+    const dur = durationMs('break', settings);
+    return { mode: 'break', status: 'running', endsAt: now + dur, remainingMs: dur };
+  }
   return { mode: 'focus', status: 'idle', endsAt: null, remainingMs: durationMs('focus', settings) };
 }
 
