@@ -30,6 +30,12 @@ import {
 } from '@/lib/timer';
 
 const TIMER_ALARM = 'sidestep-timer-end';
+// A safety net. The exact alarm above is what SHOULD wake us at the end of a
+// session, but a service worker is shut down whenever Chrome feels like it, and
+// a single dropped alarm would leave the timer frozen at zero forever. So we also
+// tick once a minute (the shortest period Chrome allows) and roll the timer
+// forward if it has already run out. Belt and braces.
+const TICK_ALARM = 'sidestep-tick';
 // A timed freedom window uses an alarm named `sidestep-freedom:<site>` so it can
 // clean itself up when it expires (e.g. "youtube.com: free for 15 min").
 const FREEDOM_PREFIX = 'sidestep-freedom:';
@@ -46,15 +52,21 @@ export default defineBackground(() => {
   // list so blocking can never be broken by corrupted data.
   healLists();
 
+  // The service worker has just started (browser launch, extension reload, or
+  // Chrome waking us for an event). Any session that ran out while we were asleep
+  // is rolled forward now, and the once-a-minute safety tick is (re)armed.
+  browser.alarms.create(TICK_ALARM, { periodInMinutes: 1 });
+  reconcile();
+
   // Commands coming from the popup.
   browser.runtime.onMessage.addListener((message) => {
     return handleCommand(message);
   });
 
-  // The clock waking us up when a session is due to finish, or a freedom window
-  // reaching its end so we can clear it.
+  // The clock waking us up: a session due to finish, the safety tick, or a
+  // freedom window reaching its end so we can clean it up.
   browser.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === TIMER_ALARM) handleSessionEnd();
+    if (alarm.name === TIMER_ALARM || alarm.name === TICK_ALARM) reconcile();
     else if (alarm.name.startsWith(FREEDOM_PREFIX)) {
       expireAllowance(alarm.name.slice(FREEDOM_PREFIX.length));
     }
@@ -196,6 +208,13 @@ async function handleCommand(message: any) {
   if (action === 'allowSite') return allowSite(message.host, message.minutes);
   if (action === 'revokeSite') return revokeSite(message.host);
 
+  // The popup's countdown hit zero and it wants the handover NOW, rather than
+  // waiting for an alarm. Harmless if nothing is actually due.
+  if (action === 'sync') {
+    await reconcile();
+    return timer.getValue();
+  }
+
   const [t, s] = await Promise.all([timer.getValue(), settings.getValue()]);
   let next = t;
 
@@ -273,17 +292,36 @@ async function syncAlarm(t: any) {
   }
 }
 
-// A session reached zero. `completeState` decides what comes next: focus rolls
-// into its break, a break rolls into the next round's focus, and the last break
-// of the last round ends the run. We always re-sync the alarm afterwards — that's
-// what schedules the wake-up for whatever is now running (and clears it when the
-// run is over and we go idle).
-async function handleSessionEnd() {
-  const [t, s] = await Promise.all([timer.getValue(), settings.getValue()]);
-  const next = completeState(t, s);
-  await timer.setValue(next);
-  await syncAlarm(next);
-  notify(t, s, next);
+// Bring the timer up to date with the wall clock.
+//
+// This is the ONLY place a session is completed, and it is safe to call at any
+// moment — on a wake-up, on the safety tick, or when the popup asks. It asks one
+// question: has the running session already run out? If so it rolls forward,
+// exactly as if we'd been awake at the moment it ended.
+//
+// It rolls forward in a LOOP because we may have been asleep (or the laptop shut)
+// for longer than a whole session: a 25/5 run left alone for an hour has to walk
+// through several boundaries to arrive at the right place. Each step is completed
+// at its true boundary time (`t.endsAt`), not "now", so the rounds land where they
+// would have landed had we never slept.
+async function reconcile() {
+  const s = await settings.getValue();
+  let t: any = await timer.getValue();
+  if (t.status !== 'running' || !t.endsAt) return; // idle or paused: nothing is due
+
+  let finished: any = null; // the last session we actually completed
+  let guard = 0; // a long sleep shouldn't spin forever
+  while (t.status === 'running' && t.endsAt && t.endsAt <= Date.now() && guard++ < 500) {
+    finished = t;
+    t = completeState(t, s, t.endsAt);
+  }
+  if (!finished) return; // still running, plenty of time left
+
+  await timer.setValue(t);
+  await syncAlarm(t);
+  // One notification, about the session that just ended. If we caught up over
+  // several missed boundaries, telling you about each one would be a pile-up.
+  notify(finished, s, t);
 }
 
 // Say what actually just happened. Three different moments, three messages —

@@ -154,6 +154,20 @@
     return t.remainingMs;
   }
 
+  // The moment our countdown reaches zero, ask the background to do the handover
+  // (focus -> break -> next round). The background has its own alarms for this and
+  // works fine with the popup shut; this just means that when you ARE watching, the
+  // switch happens the instant the clock hits 00:00 instead of whenever Chrome
+  // gets round to waking it. `syncing` stops us asking over and over.
+  let syncing = false;
+  $effect(() => {
+    if (!t || t.status !== 'running' || remaining > 0 || syncing) return;
+    syncing = true;
+    browser.runtime.sendMessage({ action: 'sync' }).finally(() => {
+      setTimeout(() => (syncing = false), 1500);
+    });
+  });
+
   function send(action, extra = {}) {
     browser.runtime.sendMessage({ action, ...extra });
   }
