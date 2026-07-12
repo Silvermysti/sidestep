@@ -16,6 +16,9 @@ export const SETTINGS_DEFAULTS = {
   distractingSites: ['youtube.com', 'instagram.com', 'x.com', 'reddit.com'],
   focusMinutes: 25,
   breakMinutes: 5,
+  // How many rounds of (focus + break) to run before stopping. A number, or the
+  // string 'continuous' to keep cycling until you stop it yourself.
+  cycles: 4,
   linkOrder: 'sequential', // 'sequential' (to-do style) | 'random'
 };
 
@@ -30,12 +33,15 @@ export const settings = storage.defineItem('local:settings', {
 //   status      : 'idle' | 'running' | 'paused'
 //   endsAt      : timestamp (ms) when the running session ends, else null
 //   remainingMs : time left, used while paused/idle so resume is exact
+//   cycle       : which round we're on (1-based). A round is one focus + its
+//                 break; when the last one ends the timer stops.
 export const timer = storage.defineItem('local:timer', {
   fallback: {
     mode: 'focus',
     status: 'idle',
     endsAt: null,
     remainingMs: 25 * MINUTE,
+    cycle: 1,
   },
 });
 

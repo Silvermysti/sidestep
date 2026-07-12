@@ -25,11 +25,22 @@ export function getRemainingMs(t, now = Date.now()) {
   return t.remainingMs;
 }
 
-// idle/paused -> running from the start of a fresh focus session. Focus-only, so
-// we always start in focus, never inheriting a stale 'break' from saved state.
+// How many rounds of (focus + break) to run. Returns Infinity for 'continuous',
+// so every "are there rounds left?" test is a plain number comparison. Anything
+// missing or nonsensical falls back to 1 round, which can only ever end early —
+// never trap someone in a loop they didn't ask for.
+export function totalCycles(settings) {
+  if (settings?.cycles === 'continuous') return Infinity;
+  const n = Number(settings?.cycles);
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
+}
+
+// idle/paused -> running from the start of a fresh focus session. A run always
+// begins at round 1 of focus, never inheriting a stale 'break' or a half-finished
+// round from saved state.
 export function startState(t, settings, now = Date.now()) {
   const dur = durationMs('focus', settings);
-  return { ...t, mode: 'focus', status: 'running', endsAt: now + dur, remainingMs: dur };
+  return { ...t, mode: 'focus', status: 'running', endsAt: now + dur, remainingMs: dur, cycle: 1 };
 }
 
 // running -> paused, remembering exactly how much was left.
@@ -49,23 +60,44 @@ export function resumeState(t, now = Date.now()) {
   return { ...t, status: 'running', endsAt: now + t.remainingMs };
 }
 
-// back to a fresh, idle focus session. Sidestep is focus-only, so reset always
-// returns to focus — even if an old saved state still carried mode: 'break'.
+// back to a fresh, idle run: round 1, focus, stopped. Reset always returns to
+// focus, even if an old saved state still carried mode: 'break'.
 export function resetState(t, settings) {
-  return { mode: 'focus', status: 'idle', endsAt: null, remainingMs: durationMs('focus', settings) };
+  return {
+    mode: 'focus',
+    status: 'idle',
+    endsAt: null,
+    remainingMs: durationMs('focus', settings),
+    cycle: 1,
+  };
 }
 
-// a session finished. What comes next depends on what just ended:
-//   focus done  -> the break starts immediately and runs on its own
-//   break done  -> back to a fresh, idle focus session, waiting for Start
-// The cycle always begins at focus, so a saved 'break' can never be inherited
-// as the starting mode.
+// a session hit zero. What comes next:
+//   focus done               -> its break starts, on its own
+//   break done, rounds left  -> the NEXT round's focus starts, on its own
+//   break done, last round   -> the run is over: idle, back at round 1
+// So the whole run flows by itself once started, and stops exactly when the
+// requested number of rounds is done ('continuous' never runs out).
 export function completeState(t, settings, now = Date.now()) {
+  const cycle = t.cycle ?? 1;
+
   if (t.mode === 'focus') {
     const dur = durationMs('break', settings);
-    return { mode: 'break', status: 'running', endsAt: now + dur, remainingMs: dur };
+    return { mode: 'break', status: 'running', endsAt: now + dur, remainingMs: dur, cycle };
   }
-  return { mode: 'focus', status: 'idle', endsAt: null, remainingMs: durationMs('focus', settings) };
+
+  // A break just ended, which means round `cycle` is complete.
+  if (cycle < totalCycles(settings)) {
+    const dur = durationMs('focus', settings);
+    return { mode: 'focus', status: 'running', endsAt: now + dur, remainingMs: dur, cycle: cycle + 1 };
+  }
+  return resetState(t, settings); // all rounds done — stop and wait
+}
+
+// Was that the last break of the last round? Used to tell "your run is finished"
+// apart from "on to the next round" when we notify.
+export function isRunOver(t, settings) {
+  return t.mode === 'break' && (t.cycle ?? 1) >= totalCycles(settings);
 }
 
 // turn milliseconds into "MM:SS" for display.

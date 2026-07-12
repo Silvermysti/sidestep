@@ -3,7 +3,7 @@
   import { browser } from '#imports';
   import { settings, timer, lists, allowances, parkingLot } from '@/lib/storage';
   import { parkThought } from '@/lib/parking';
-  import { durationMs, formatMs } from '@/lib/timer';
+  import { durationMs, formatMs, totalCycles } from '@/lib/timer';
   import { hostnameOf, linkTitle, linkUrl, normalizeUrl, siteBuckets, siteKeyOf, siteLabel, siteToBlock } from '@/lib/sites';
 
   // Which top tab is showing. The popup is now split into pages instead of one
@@ -241,6 +241,9 @@
   // can be demoed (and tested) end to end in a few seconds.
   const FOCUS_STEPS = [1, 5, 10, 15, 20, 25, 30, 45, 60, 90];
   const BREAK_STEPS = [1, 3, 5, 10, 15, 20, 30];
+  // How many rounds of focus+break to run. 'continuous' sits at the end of the
+  // list, so pressing + past the largest number means "just keep going".
+  const CYCLE_STEPS = [1, 2, 3, 4, 5, 6, 8, 10, 12, 'continuous'];
 
   // Move one place along the list. `dir` is -1 (shorter) or +1 (longer). We find
   // where the saved value sits — snapping to the nearest preset if an old save
@@ -263,8 +266,32 @@
     if (t.status === 'idle') send('reset');
   }
 
+  // Rounds work the same way, but the list ends in 'continuous' rather than a
+  // number, so it needs its own small stepper: find where we are, move one place.
+  async function stepCycles(dir) {
+    const at = CYCLE_STEPS.indexOf(s.cycles);
+    // An off-list value (or a missing one) snaps to the default of 4 rounds.
+    const from = at === -1 ? CYCLE_STEPS.indexOf(4) : at;
+    const i = Math.max(0, Math.min(CYCLE_STEPS.length - 1, at === -1 ? from : from + dir));
+    await settings.setValue({ ...s, cycles: CYCLE_STEPS[i] });
+  }
+
+  let cycles = $derived(s ? s.cycles : 4);
+  let cycleLabel = $derived(cycles === 'continuous' ? '∞' : String(cycles));
+  // "Round 2 of 4" under the clock, so a run never feels open-ended. Hidden when
+  // idle — there's no round in progress to report.
+  let roundLabel = $derived(
+    !t || !s || t.status === 'idle'
+      ? ''
+      : cycles === 'continuous'
+        ? `Round ${t.cycle ?? 1}`
+        : `Round ${t.cycle ?? 1} of ${totalCycles(s)}`
+  );
+
   // Grey out a button once you're at the end of its list, so it's clear there's
   // nothing further that way.
+  let cyclesAtMin = $derived(s ? s.cycles === CYCLE_STEPS[0] : false);
+  let cyclesAtMax = $derived(s ? s.cycles === CYCLE_STEPS[CYCLE_STEPS.length - 1] : false);
   let focusAtMin = $derived(s ? s.focusMinutes <= FOCUS_STEPS[0] : false);
   let focusAtMax = $derived(s ? s.focusMinutes >= FOCUS_STEPS[FOCUS_STEPS.length - 1] : false);
   let breakAtMin = $derived(s ? s.breakMinutes <= BREAK_STEPS[0] : false);
@@ -314,6 +341,9 @@
             {:else if t.status === 'paused'}Paused
             {:else}Ready when you are{/if}
           </div>
+          {#if roundLabel}
+            <div class="round">{roundLabel}</div>
+          {/if}
         </div>
 
         <div class="bunny-slot">
@@ -545,6 +575,23 @@
           </div>
         </div>
 
+        <div class="setting">
+          <span class="setting-name">
+            Rounds
+            <small class="setting-note">focus + break, repeated</small>
+          </span>
+          <div class="stepper">
+            <button disabled={cyclesAtMin} onclick={() => stepCycles(-1)} aria-label="Fewer rounds">−</button>
+            <span class="num">{cycleLabel}<small>{cycles === 'continuous' ? 'nonstop' : 'rounds'}</small></span>
+            <button disabled={cyclesAtMax} onclick={() => stepCycles(1)} aria-label="More rounds">+</button>
+          </div>
+        </div>
+
+        <p class="hint">
+          A round is one focus session and its break. Rounds run back to back on their
+          own, and the timer stops when the last one finishes. Push past 12 to reach ∞,
+          which keeps cycling until you stop it yourself.
+        </p>
         <p class="hint">Changes apply the next time you start (or reset) a session.</p>
       </section>
     {/if}
@@ -655,6 +702,18 @@
     color: var(--ink);
   }
   .status { margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+  /* "Round 2 of 4" — a run with an end in sight is easier to commit to. */
+  .round {
+    margin-top: 5px;
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    color: var(--accent-deep);
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    border-radius: 999px;
+    padding: 2px 9px;
+  }
 
   /* The bunny, standing on the grass. Its feet rest on the grass line; the baked
      hop in the frames lifts it off and back as the run cycle plays. `bottom` is a
@@ -936,8 +995,9 @@
   .empty { font-size: 12.5px; color: var(--ink-faint); padding: 2px 0; }
 
   /* Settings */
-  .setting { display: flex; align-items: center; justify-content: space-between; }
-  .setting-name { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  .setting { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .setting-name { font-size: 13.5px; font-weight: 700; color: var(--ink); display: flex; flex-direction: column; gap: 1px; }
+  .setting-note { font-size: 10.5px; font-weight: 600; color: var(--ink-faint); }
   .stepper {
     display: flex;
     align-items: center;

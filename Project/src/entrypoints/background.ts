@@ -25,6 +25,8 @@ import {
   resumeState,
   resetState,
   completeState,
+  isRunOver,
+  totalCycles,
 } from '@/lib/timer';
 
 const TIMER_ALARM = 'sidestep-timer-end';
@@ -88,6 +90,7 @@ async function healSettings() {
     !Array.isArray(stored.distractingSites) ||
     stored.focusMinutes == null ||
     stored.breakMinutes == null ||
+    stored.cycles == null ||
     stored.linkOrder == null;
   if (!needsFix) return;
   await settings.setValue({
@@ -270,26 +273,43 @@ async function syncAlarm(t: any) {
   }
 }
 
-// A session reached zero. `completeState` decides what comes next: a finished
-// focus session rolls straight into a running break; a finished break returns to
-// an idle focus session. Either way we re-sync the alarm — that's what schedules
-// the wake-up for the END of the break (and clears it when we go idle).
+// A session reached zero. `completeState` decides what comes next: focus rolls
+// into its break, a break rolls into the next round's focus, and the last break
+// of the last round ends the run. We always re-sync the alarm afterwards — that's
+// what schedules the wake-up for whatever is now running (and clears it when the
+// run is over and we go idle).
 async function handleSessionEnd() {
   const [t, s] = await Promise.all([timer.getValue(), settings.getValue()]);
   const next = completeState(t, s);
   await timer.setValue(next);
   await syncAlarm(next);
-  notify(t.mode);
+  notify(t, s, next);
 }
 
-function notify(finished: string) {
-  const breakStarting = finished === 'focus';
+// Say what actually just happened. Three different moments, three messages —
+// "Break over" would be wrong for the end of the final round, and silence about
+// which round you're on makes a long run feel endless.
+function notify(finished: any, s: any, next: any) {
+  const total = totalCycles(s);
+  const rounds = total === Infinity ? '' : ` of ${total}`;
+
+  let title: string;
+  let message: string;
+  if (finished.mode === 'focus') {
+    title = 'Focus done — break time';
+    message = `Round ${finished.cycle ?? 1}${rounds}. Go rest, ${s.breakMinutes} min on the clock.`;
+  } else if (isRunOver(finished, s)) {
+    title = 'All rounds complete';
+    message = `That's ${total} focus ${total === 1 ? 'round' : 'rounds'} done. Nice work.`;
+  } else {
+    title = 'Break over — back to focus';
+    message = `Round ${next.cycle}${rounds} starting now.`;
+  }
+
   browser.notifications.create({
     type: 'basic',
     iconUrl: browser.runtime.getURL('/icon/128.png'),
-    title: breakStarting ? 'Focus session complete' : 'Break over',
-    message: breakStarting
-      ? 'Nice work. Your break has started, go rest.'
-      : 'Ready when you are for another round.',
+    title,
+    message,
   });
 }
