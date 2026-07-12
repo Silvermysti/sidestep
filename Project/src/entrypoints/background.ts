@@ -16,6 +16,7 @@ import {
   linkTitle,
   linkUrl,
   matchingSite,
+  migrateLists,
   serveNextLink,
 } from '@/lib/sites';
 import {
@@ -98,34 +99,42 @@ async function healSettings() {
   });
 }
 
-// Repair the saved lists in place: guarantee `topics` is an object and every
-// topic maps to an array. Only writes when something was actually wrong, so we
-// don't churn storage on every startup.
+// Bring the saved lists up to date and make them safe to loop over.
+//
+// Two jobs. First, MIGRATE: saves from before links were bucketed by site still
+// carry topic folders, so we re-file every link under the site it lives on and
+// drop `topics` for good. Second, HEAL: guarantee `sites` is a plain object and
+// every bucket is an array, because a bucket stored as anything else would crash
+// the navigation handler (a for…of over a non-list) and silently stop the
+// redirect. We only write when something actually changed, so we don't churn
+// storage on every startup.
 async function healLists() {
   const stored: any = await lists.getValue();
   if (!stored || typeof stored !== 'object') return; // fallback covers a missing value
 
-  // A valid `topics` is a plain object (not null, not an array).
-  const validTopics =
-    stored.topics && typeof stored.topics === 'object' && !Array.isArray(stored.topics);
-  const topics = validTopics ? stored.topics : {};
-  let changed = !validTopics;
+  const migrated = migrateLists(stored); // null when already the new shape
+  const base: any = migrated ?? stored;
+  let changed = migrated != null;
+
+  const validSites = base.sites && typeof base.sites === 'object' && !Array.isArray(base.sites);
+  if (!validSites) changed = true;
 
   const fixed: Record<string, any[]> = {};
-  for (const [name, links] of Object.entries(topics)) {
+  for (const [key, links] of Object.entries(validSites ? base.sites : {})) {
     if (Array.isArray(links)) {
-      fixed[name] = links;
+      if (links.length) fixed[key] = links; // drop buckets that are now empty
+      else changed = true;
     } else {
-      fixed[name] = []; // a non-list topic was the crash source — reset it
-      changed = true;
+      changed = true; // a non-list bucket was the crash source — drop it
     }
   }
-  if (Object.keys(fixed).length === 0) {
-    fixed.General = []; // never leave the user with no topics at all
-    changed = true;
-  }
 
-  if (changed) await lists.setValue({ ...stored, topics: fixed });
+  const cursors =
+    base.cursors && typeof base.cursors === 'object' && !Array.isArray(base.cursors)
+      ? base.cursors
+      : ((changed = true), {});
+
+  if (changed) await lists.setValue({ sites: fixed, cursors });
 }
 
 async function handleNavigation(details: any) {
@@ -157,8 +166,11 @@ async function handleNavigation(details: any) {
     return;
   }
 
-  // Not on the list → substitute: serve the next useful link, advance, save.
-  const { link, lists: updated } = serveNextLink(l);
+  // Not on the list → substitute. We ask for the next link saved for THIS site,
+  // so reaching for YouTube gets you your next saved YouTube video rather than
+  // something unrelated. If nothing is saved for it, serveNextLink falls back to
+  // whichever site has links, so the page is never a dead end.
+  const { link, lists: updated } = serveNextLink(l, host);
   await lists.setValue(updated);
 
   const url = linkUrl(link);

@@ -4,7 +4,7 @@
   import { settings, timer, lists, allowances, parkingLot } from '@/lib/storage';
   import { parkThought } from '@/lib/parking';
   import { durationMs, formatMs } from '@/lib/timer';
-  import { currentLinks, hostnameOf, linkTitle, linkUrl, normalizeUrl, siteToBlock } from '@/lib/sites';
+  import { hostnameOf, linkTitle, linkUrl, normalizeUrl, siteBuckets, siteKeyOf, siteLabel, siteToBlock } from '@/lib/sites';
 
   // Which top tab is showing. The popup is now split into pages instead of one
   // long scroll; this single piece of state decides which page is visible.
@@ -28,7 +28,6 @@
   let now = $state(Date.now());
 
   // Draft text for the editable inputs.
-  let topicDraft = $state('');
   let linkDraft = $state('');
   let titleDraft = $state('');
   let siteDraft = $state('');
@@ -125,8 +124,10 @@
     return () => clearInterval(id);
   });
 
-  let topic = $derived(l?.currentTopic ?? 'General');
-  let links = $derived(l ? currentLinks(l) : []);
+  // Saved links, in per-site buckets: [{ key, label, links }]. Nothing to choose
+  // when saving — a link's bucket comes from its own URL.
+  let buckets = $derived(l ? siteBuckets(l) : []);
+  let linkCount = $derived(buckets.reduce((n, b) => n + b.links.length, 0));
   let sites = $derived(s?.distractingSites ?? []);
   // Freedom windows that are still active right now (recomputes as `now` ticks,
   // so an expired one disappears on its own).
@@ -167,33 +168,36 @@
     }
   }
 
-  // --- Topic ("What are you exploring?") ---
-  async function setTopic() {
-    const name = topicDraft.trim() || 'General';
-    const topics = { ...l.topics };
-    if (!topics[name]) topics[name] = [];
-    await lists.setValue({ ...l, currentTopic: name, topics, cursor: 0 });
-    topicDraft = '';
-  }
-
-  // --- Useful links in the current topic --- (each saved as { url, title }) ---
+  // --- Useful links --- (each saved as { url, title }, filed under its site) ---
+  //
+  // The site a link belongs to is read off its own URL, so there is no folder to
+  // pick: paste a YouTube link and it joins the YouTube bucket, which is exactly
+  // the bucket we serve from when YouTube is the thing pulling at you.
   async function addLink(rawUrl, rawTitle = '') {
     const url = normalizeUrl(rawUrl);
-    if (!url) return;
+    const key = siteKeyOf(url);
+    if (!url || !key) return;
     const title = (rawTitle || '').trim();
-    const existing = l.topics[topic] ?? [];
+
+    const existing = l.sites?.[key] ?? [];
     if (existing.some((x) => linkUrl(x) === url)) { linkDraft = ''; titleDraft = ''; return; }
-    await lists.setValue({ ...l, topics: { ...l.topics, [topic]: [...existing, { url, title }] } });
+
+    await lists.setValue({
+      ...l,
+      sites: { ...(l.sites ?? {}), [key]: [...existing, { url, title }] },
+    });
     linkDraft = '';
     titleDraft = '';
   }
 
-  async function removeLink(i) {
-    const existing = l.topics[topic] ?? [];
-    await lists.setValue({
-      ...l,
-      topics: { ...l.topics, [topic]: existing.filter((_, idx) => idx !== i) },
-    });
+  // Drop one link from its bucket. An emptied bucket is removed entirely, so the
+  // popup doesn't keep showing a site heading with nothing under it.
+  async function removeLink(key, i) {
+    const rest = (l.sites?.[key] ?? []).filter((_, idx) => idx !== i);
+    const nextSites = { ...(l.sites ?? {}) };
+    if (rest.length) nextSites[key] = rest;
+    else delete nextSites[key];
+    await lists.setValue({ ...l, sites: nextSites });
   }
 
   // Grab the page in the active tab and save it, using the page's own title.
@@ -201,6 +205,10 @@
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (tab?.url) await addLink(tab.url, tab.title ?? '');
   }
+
+  // The site the pasted link would be filed under, shown live as a hint so it's
+  // obvious where it's about to land.
+  let draftSite = $derived(linkDraft ? siteKeyOf(normalizeUrl(linkDraft)) : null);
 
   // --- Sites to redirect (the user's own block-list) ---
   async function addSite() {
@@ -299,8 +307,6 @@
       <!-- The bunny's home. It hops through the run cycle while you're focusing
            and sits still when idle/paused/on a break. -->
       <div class="habitat">
-        <span class="habitat-topic">{topic}</span>
-
         <div class="hud">
           <div class="time">{formatMs(remaining)}</div>
           <div class="status">
@@ -398,19 +404,16 @@
     {#if tab === 'lists'}
       <section class="card">
         <div class="card-head">
-          <span class="card-label">Exploring</span>
-          <span class="topic-pill">{topic}</span>
+          <span class="card-label">Useful links</span>
+          {#if linkCount}
+            <span class="topic-pill">{linkCount} saved</span>
+          {/if}
         </div>
 
-        <div class="row">
-          <input
-            class="inp"
-            placeholder="Change topic…"
-            bind:value={topicDraft}
-            onkeydown={(e) => e.key === 'Enter' && setTopic()}
-          />
-          <button class="mini" onclick={setTopic}>Set</button>
-        </div>
+        <p class="hint no-top">
+          Saved links are filed by the site they're on. Reach for YouTube mid-session
+          and Sidestep serves your next saved YouTube link instead.
+        </p>
 
         <div class="row">
           <input
@@ -427,25 +430,36 @@
           bind:value={titleDraft}
           onkeydown={(e) => e.key === 'Enter' && addLink(linkDraft, titleDraft)}
         />
+        {#if draftSite}
+          <span class="filed">Files under <strong>{siteLabel(draftSite)}</strong></span>
+        {/if}
 
         <button class="soft-btn" onclick={saveCurrentPage}>
-          <span class="plus">＋</span> Save this page to “{topic}”
+          <span class="plus">＋</span> Save the page I'm on
         </button>
 
-        {#if links.length}
-          <ul class="list">
-            {#each links as link, i}
-              <li>
-                <div class="link-main">
-                  {#if linkTitle(link)}
-                    <span class="link-title">{linkTitle(link)}</span>
-                  {/if}
-                  <span class="link-url" title={linkUrl(link)}>{prettyUrl(linkUrl(link))}</span>
-                </div>
-                <button class="x" onclick={() => removeLink(i)} aria-label="Remove link">×</button>
-              </li>
-            {/each}
-          </ul>
+        {#if buckets.length}
+          {#each buckets as b}
+            <div class="bucket">
+              <div class="bucket-head">
+                <span class="bucket-name">{b.label}</span>
+                <span class="bucket-count">{b.links.length}</span>
+              </div>
+              <ul class="list">
+                {#each b.links as link, i}
+                  <li>
+                    <div class="link-main">
+                      {#if linkTitle(link)}
+                        <span class="link-title">{linkTitle(link)}</span>
+                      {/if}
+                      <span class="link-url" title={linkUrl(link)}>{prettyUrl(linkUrl(link))}</span>
+                    </div>
+                    <button class="x" onclick={() => removeLink(b.key, i)} aria-label="Remove link">×</button>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {/each}
         {:else}
           <div class="empty">No links yet. Add a few you actually want to get to.</div>
         {/if}
@@ -629,24 +643,6 @@
     overflow: hidden;
     transition: background 0.3s ease;
   }
-  .habitat-topic {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 2;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--accent-deep);
-    background: color-mix(in srgb, var(--surface) 70%, transparent);
-    backdrop-filter: blur(2px);
-    padding: 3px 10px;
-    border-radius: 999px;
-    max-width: 55%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   /* Timer "heads-up display" floating near the top of the habitat. */
   .hud { position: absolute; top: 22px; left: 0; right: 0; text-align: center; z-index: 1; }
   .time {
@@ -881,6 +877,25 @@
   .soft-btn:hover { filter: brightness(0.97); }
   .plus { font-weight: 700; margin-right: 2px; }
 
+  /* A site's bucket of saved links: a small heading with a count, then the links.
+     Grouping them this way makes the substitution rule visible — you can see at a
+     glance which sites you actually have a better answer ready for. */
+  .bucket { display: flex; flex-direction: column; gap: 6px; }
+  .bucket-head { display: flex; align-items: center; gap: 7px; padding-left: 2px; }
+  .bucket-name { font-size: 12.5px; font-weight: 800; color: var(--ink); }
+  .bucket-count {
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--accent-deep);
+    background: var(--accent-tint);
+    border-radius: 999px;
+    padding: 1px 7px;
+  }
+
+  /* Live hint under the paste box: which bucket this link is about to land in. */
+  .filed { font-size: 11.5px; color: var(--ink-soft); padding-left: 2px; margin-top: -3px; }
+  .filed strong { font-weight: 800; color: var(--accent-deep); }
+
   /* Link list */
   .list { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
   .list li {
@@ -950,6 +965,7 @@
   }
   .num small { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); margin-left: 2px; }
   .hint { margin: 2px 0 0; font-size: 11.5px; color: var(--ink-faint); }
+  .hint.no-top { margin: -3px 0 0; line-height: 1.45; }
 
   /* Freedom-window status (banner on Focus, list on Blocked) */
   .freedom-banner {

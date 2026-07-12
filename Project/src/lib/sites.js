@@ -71,24 +71,63 @@ export function linkTitle(link) {
   return typeof link === 'string' ? '' : (link?.title ?? '');
 }
 
-// The links saved under the topic we're currently exploring. Always returns an
-// array — a topic stored as anything other than a list (corrupted/old data) is
-// treated as empty rather than trusted, so callers can safely loop over it.
-export function currentLinks(lists) {
-  const topic = lists.currentTopic || 'General';
-  const links = lists?.topics?.[topic];
+// --- Links, bucketed by site ---------------------------------------------
+//
+// `lists` is { sites: { siteKey: [link, ...] }, cursors: { siteKey: n } }.
+// A link's bucket comes from its OWN url, so saving never asks the user to pick
+// a folder. That is the whole point of the new shape: the substitute we serve
+// can come from the same site you just reached for.
+
+// Which bucket does this link belong in? Its hostname, folded into a site group
+// (so youtu.be and m.youtube.com both land in "youtube"). Null for a bad URL.
+export function siteKeyOf(url) {
+  const host = hostnameOf(linkUrl(url) || url);
+  return host ? siteGroup(host).key : null;
+}
+
+// The links saved for one site bucket. Always an array — a bucket stored as
+// anything other than a list (corrupted / half-migrated data) is treated as
+// empty rather than trusted, so callers can safely loop over it.
+export function linksForSite(lists, siteKey) {
+  const links = lists?.sites?.[siteKey];
   return Array.isArray(links) ? links : [];
 }
 
-// Pick the NEXT link to serve (sequential, like a to-do list) and return an
-// updated `lists` with the cursor advanced. Pure: it does not save anything —
-// the caller decides whether to persist the new lists. Wraps back to the start
-// after the last link. Returns { link: null } when the topic has no links.
-export function serveNextLink(lists) {
-  const links = currentLinks(lists);
-  if (links.length === 0) return { link: null, lists };
-  const idx = (lists.cursor ?? 0) % links.length;
-  return { link: links[idx], lists: { ...lists, cursor: idx + 1 } };
+// Every bucket, as [{ key, label, links }], skipping empties. Sorted so the site
+// with the most saved links comes first; that keeps the popup and the redirect
+// menu stable rather than reordering on every save.
+export function siteBuckets(lists) {
+  return Object.entries(lists?.sites ?? {})
+    .filter(([, links]) => Array.isArray(links) && links.length > 0)
+    .map(([key, links]) => ({ key, label: siteLabel(key), links }))
+    .sort((a, b) => b.links.length - a.links.length || a.key.localeCompare(b.key));
+}
+
+// Pick the NEXT link to serve for the site the user just reached for, and return
+// an updated `lists` with THAT SITE's cursor advanced. Pure: it saves nothing —
+// the caller decides whether to persist. Wraps back to the start after the last
+// link in the bucket.
+//
+// If the user has nothing saved for this site, we fall back to any other site
+// that does have links, so they still get a useful page instead of a dead end.
+// Returns { link: null } only when nothing at all is saved.
+export function serveNextLink(lists, host = '') {
+  const key = host ? siteGroup(host).key : null;
+  let links = key ? linksForSite(lists, key) : [];
+  let bucket = key;
+
+  if (links.length === 0) {
+    const fallback = siteBuckets(lists)[0]; // biggest non-empty bucket
+    if (!fallback) return { link: null, lists };
+    bucket = fallback.key;
+    links = fallback.links;
+  }
+
+  const idx = (lists?.cursors?.[bucket] ?? 0) % links.length;
+  return {
+    link: links[idx],
+    lists: { ...lists, cursors: { ...(lists?.cursors ?? {}), [bucket]: idx + 1 } },
+  };
 }
 
 // --- Allow-list matching -------------------------------------------------
@@ -156,12 +195,12 @@ export function canonicalKey(urlString) {
 }
 
 // Build a fast lookup Set of the canonical keys for EVERY saved link across all
-// topics. Membership tests on a Set are ~O(1) (hash-based), vs O(n) if we
+// site buckets. Membership tests on a Set are ~O(1) (hash-based), vs O(n) if we
 // re-scanned the arrays on every navigation.
 export function buildAllowedKeys(lists) {
   const keys = new Set();
-  for (const links of Object.values(lists?.topics ?? {})) {
-    if (!Array.isArray(links)) continue; // skip a corrupted/non-list topic
+  for (const links of Object.values(lists?.sites ?? {})) {
+    if (!Array.isArray(links)) continue; // skip a corrupted/non-list bucket
     for (const link of links) {
       const k = canonicalKey(linkUrl(link));
       if (k) keys.add(k);
@@ -172,55 +211,77 @@ export function buildAllowedKeys(lists) {
 
 // --- Grouping for the redirect menu --------------------------------------
 //
-// The redirect landing page shows every saved link grouped by the SITE it
-// belongs to, then by topic. These two helpers are pure (no storage), so they
-// are easy to test and reuse.
+// The redirect landing page shows every saved link under the site it belongs to.
+// These helpers are pure (no storage), so they are easy to test and reuse.
 
-// Fold a hostname into a friendly site "group". The big platforms have several
-// domains (youtu.be, m.youtube.com, twitter.com) that all mean the same place,
-// so we map them to one key + display label. Anything else groups under its own
-// plain hostname.
-export function siteGroup(host) {
-  const h = (host || '').replace(/^www\./, '').toLowerCase();
-  if (h === 'youtube.com' || h === 'youtu.be' || h === 'm.youtube.com' || h === 'music.youtube.com')
-    return { key: 'youtube', label: 'YouTube' };
-  if (h === 'instagram.com' || h === 'm.instagram.com')
-    return { key: 'instagram', label: 'Instagram' };
-  if (h === 'x.com' || h === 'twitter.com' || h === 'mobile.x.com' || h === 'mobile.twitter.com')
-    return { key: 'x', label: 'X' };
-  if (h === 'reddit.com' || h === 'old.reddit.com' || h === 'np.reddit.com' || h === 'm.reddit.com')
-    return { key: 'reddit', label: 'Reddit' };
-  return { key: h, label: h };
+// The big platforms have several domains (youtu.be, m.youtube.com, twitter.com)
+// that all mean the same place, so they fold into ONE bucket key with a properly
+// capitalised name. Anything else buckets under its own plain hostname.
+const SITE_LABELS = {
+  youtube: 'YouTube',
+  instagram: 'Instagram',
+  x: 'X',
+  reddit: 'Reddit',
+};
+
+// The display name for a bucket key. The known platforms get their proper
+// capitalisation; anything else shows as its plain hostname ("amazon.com"),
+// which is honest and unambiguous — "Amazon.com" reads worse, and shortening it
+// to "Amazon" would hide which domain it actually is.
+export function siteLabel(key) {
+  return SITE_LABELS[key] ?? key ?? '';
 }
 
-// Build the redirect menu from saved lists: links grouped by site, then topic.
-// Returns: [ { key, label, topics: [ { topic, links: [...] } ] }, ... ].
-// `priorityHost` (the site the user just reached for) is floated to the front
-// when the user has saved links for it.
+// Fold a hostname into its site group: a stable bucket key plus a display label.
+export function siteGroup(host) {
+  const h = (host || '').replace(/^www\./, '').toLowerCase();
+  let key = h;
+  if (h === 'youtube.com' || h === 'youtu.be' || h === 'm.youtube.com' || h === 'music.youtube.com') key = 'youtube';
+  else if (h === 'instagram.com' || h === 'm.instagram.com') key = 'instagram';
+  else if (h === 'x.com' || h === 'twitter.com' || h === 'mobile.x.com' || h === 'mobile.twitter.com') key = 'x';
+  else if (h === 'reddit.com' || h === 'old.reddit.com' || h === 'np.reddit.com' || h === 'm.reddit.com') key = 'reddit';
+  return { key, label: siteLabel(key) };
+}
+
+// The redirect menu: every non-empty site bucket, as [{ key, label, links }].
+// The site the user just reached for (`priorityHost`) floats to the front, so
+// the links most likely to answer the impulse are the ones they see first.
 export function groupLinksBySite(lists, priorityHost = '') {
-  const sites = new Map(); // key -> { key, label, topics: Map(topic -> links[]) }
-  const topics = lists?.topics ?? {};
-  for (const [topic, links] of Object.entries(topics)) {
-    if (!Array.isArray(links)) continue; // skip a corrupted/non-list topic
+  const buckets = siteBuckets(lists);
+  const priorityKey = priorityHost ? siteGroup(priorityHost).key : null;
+  return buckets.sort((a, b) =>
+    a.key === priorityKey ? -1 : b.key === priorityKey ? 1 : 0
+  );
+}
+
+// --- Migration from the old topic folders --------------------------------
+//
+// Saves from before this change look like { currentTopic, topics: {name: [...]},
+// cursor }. Topics are gone; every link is re-filed into the bucket for the site
+// it actually lives on, dropping duplicates. Returns null when there is nothing
+// to migrate, so the caller can avoid a pointless write.
+export function migrateLists(stored) {
+  if (!stored || typeof stored !== 'object') return null;
+  if (!stored.topics) return null; // already the new shape
+
+  const sites = { ...(stored.sites ?? {}) };
+  const seen = new Set();
+  for (const links of Object.values(sites)) {
+    if (Array.isArray(links)) for (const l of links) seen.add(linkUrl(l));
+  }
+
+  for (const links of Object.values(stored.topics)) {
+    if (!Array.isArray(links)) continue; // a corrupted topic — nothing to save
     for (const link of links) {
-      const host = hostnameOf(linkUrl(link));
-      if (!host) continue;
-      const { key, label } = siteGroup(host);
-      if (!sites.has(key)) sites.set(key, { key, label, topics: new Map() });
-      const entry = sites.get(key);
-      if (!entry.topics.has(topic)) entry.topics.set(topic, []);
-      entry.topics.get(topic).push(link);
+      const url = linkUrl(link);
+      const key = siteKeyOf(url);
+      if (!key || seen.has(url)) continue;
+      seen.add(url);
+      if (!Array.isArray(sites[key])) sites[key] = [];
+      sites[key].push(typeof link === 'string' ? { url: link, title: '' } : link);
     }
   }
-  const result = [...sites.values()].map((s) => ({
-    key: s.key,
-    label: s.label,
-    topics: [...s.topics.entries()].map(([topic, links]) => ({ topic, links })),
-  }));
-  // Float the site the user reached for to the front, if present.
-  const priorityKey = siteGroup(priorityHost).key;
-  result.sort((a, b) => (a.key === priorityKey ? -1 : b.key === priorityKey ? 1 : 0));
-  return result;
+  return { sites, cursors: stored.cursors ?? {} };
 }
 
 // Tidy up a URL the user typed/pasted. Adds "https://" if they left off the

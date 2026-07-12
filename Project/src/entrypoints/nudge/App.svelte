@@ -1,8 +1,10 @@
 <script>
   // This page is what a redirected tab shows. The background script tells us in
   // the URL which site we stepped past (`from`) and which single link it served
-  // next (`to`/`title`, shown as a highlighted suggestion). For the full menu we
-  // read the saved lists straight from storage and group them by site, then topic.
+  // next (`to`/`title`, shown as a highlighted suggestion) — that link comes from
+  // the same site where possible. For the full menu we read the saved lists
+  // straight from storage; they are already bucketed by site, and the site you
+  // reached for floats to the top.
   import { onMount } from 'svelte';
   import { browser } from '#imports';
   import { lists } from '@/lib/storage';
@@ -117,31 +119,26 @@
           {#each groups as g}
             <section class="site">
               <h2 class="site-name">{g.label}</h2>
-              {#each g.topics as tp}
-                <div class="topic-group">
-                  <div class="topic-name">{tp.topic}</div>
-                  <ul>
-                    {#each tp.links as link}
-                      <li>
-                        <button class="link" onclick={() => open(linkUrl(link))}>
-                          <span class="l-title">{linkTitle(link) || prettyUrl(linkUrl(link))}</span>
-                          {#if linkTitle(link)}
-                            <span class="l-url">{prettyUrl(linkUrl(link))}</span>
-                          {/if}
-                        </button>
-                      </li>
-                    {/each}
-                  </ul>
-                </div>
-              {/each}
+              <ul>
+                {#each g.links as link}
+                  <li>
+                    <button class="link" onclick={() => open(linkUrl(link))}>
+                      <span class="l-title">{linkTitle(link) || prettyUrl(linkUrl(link))}</span>
+                      {#if linkTitle(link)}
+                        <span class="l-url">{prettyUrl(linkUrl(link))}</span>
+                      {/if}
+                    </button>
+                  </li>
+                {/each}
+              </ul>
             </section>
           {/each}
         </div>
       {:else}
         <div class="empty">
-          You haven't saved any focus links yet. Open Sidestep and add a few links to
-          the topic you're exploring — then they'll appear here instead of the
-          distraction.
+          You haven't saved any focus links yet. Open Sidestep and add a few pages you
+          actually want to get to. Save a YouTube link and it's what you'll be offered
+          the next time YouTube pulls at you.
         </div>
       {/if}
     {/if}
@@ -382,16 +379,7 @@
     padding-bottom: 6px;
     border-bottom: 1.5px solid var(--line);
   }
-  .topic-group { display: flex; flex-direction: column; gap: 5px; }
-  .topic-name {
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    margin: 4px 0 1px;
-  }
-  .topic-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  .site ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
 
   .link {
     width: 100%;

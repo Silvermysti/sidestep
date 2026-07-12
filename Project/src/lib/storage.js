@@ -39,17 +39,18 @@ export const timer = storage.defineItem('local:timer', {
   },
 });
 
-// The user's own useful links, grouped by topic (a folder).
-//   currentTopic : the topic we're exploring right now ("What are you exploring?")
-//   topics       : { topicName: [url, url, ...] }  — the links in each folder
-//   cursor       : which link to serve next (sequential, to-do style)
-// When a distracting site is intercepted, we redirect to the next link in the
-// CURRENT topic's folder. If no topic is chosen, everything lives in "General".
+// The user's own useful links, bucketed by the SITE each one lives on.
+//   sites   : { siteKey: [ { url, title }, ... ] }
+//   cursors : { siteKey: n }  — which link to serve next FOR THAT SITE
+// A link's bucket is worked out from its own URL (see siteKeyOf in sites.js), so
+// there is nothing to choose when saving. The point of bucketing by site is the
+// substitution: reach for youtube.com and you get your next saved YouTube link,
+// reach for amazon.com and you get the thing you actually meant to buy. Each site
+// keeps its own cursor so the queues don't interfere.
 export const lists = storage.defineItem('local:lists', {
   fallback: {
-    currentTopic: 'General',
-    topics: { General: [] },
-    cursor: 0,
+    sites: {},
+    cursors: {},
   },
 });
 
