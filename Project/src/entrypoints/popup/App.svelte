@@ -226,14 +226,41 @@
   }
 
   // --- Settings: session lengths ---
-  // Clamp to a sane range, save, and (if the timer is sitting idle) reset so the
-  // clock immediately shows the new length instead of the old one.
-  async function setMinutes(field, value) {
-    const max = field === 'focusMinutes' ? 90 : 30;
-    const v = Math.max(1, Math.min(max, value));
-    await settings.setValue({ ...s, [field]: v });
+  // The lengths you can pick, as fixed presets rather than "add 5 and clamp".
+  // Clamping produced odd values: drop below 1 and it pinned to 1, so every step
+  // after that was 6, 11, 16… These lists also let the short end be finer than
+  // the long end, which a single step size can't do. 1 min is kept so a session
+  // can be demoed (and tested) end to end in a few seconds.
+  const FOCUS_STEPS = [1, 5, 10, 15, 20, 25, 30, 45, 60, 90];
+  const BREAK_STEPS = [1, 3, 5, 10, 15, 20, 30];
+
+  // Move one place along the list. `dir` is -1 (shorter) or +1 (longer). We find
+  // where the saved value sits — snapping to the nearest preset if an old save
+  // holds something off-list, like 11 — then step from there and stop at the ends.
+  async function stepMinutes(field, dir) {
+    const steps = field === 'focusMinutes' ? FOCUS_STEPS : BREAK_STEPS;
+    const current = s[field];
+    let nearest = 0;
+    for (let i = 1; i < steps.length; i++) {
+      if (Math.abs(steps[i] - current) < Math.abs(steps[nearest] - current)) nearest = i;
+    }
+    // If we're already exactly on a preset, move off it. If we snapped from an
+    // off-list value, land on the snapped preset first rather than skipping past it.
+    const onPreset = steps[nearest] === current;
+    const next = onPreset ? nearest + dir : nearest;
+    const i = Math.max(0, Math.min(steps.length - 1, next));
+
+    await settings.setValue({ ...s, [field]: steps[i] });
+    // Sitting idle? Reset so the clock shows the new length straight away.
     if (t.status === 'idle') send('reset');
   }
+
+  // Grey out a button once you're at the end of its list, so it's clear there's
+  // nothing further that way.
+  let focusAtMin = $derived(s ? s.focusMinutes <= FOCUS_STEPS[0] : false);
+  let focusAtMax = $derived(s ? s.focusMinutes >= FOCUS_STEPS[FOCUS_STEPS.length - 1] : false);
+  let breakAtMin = $derived(s ? s.breakMinutes <= BREAK_STEPS[0] : false);
+  let breakAtMax = $derived(s ? s.breakMinutes >= BREAK_STEPS[BREAK_STEPS.length - 1] : false);
 </script>
 
 <main class:focus={isFocus} class:break={!isFocus}>
@@ -489,18 +516,18 @@
         <div class="setting">
           <span class="setting-name">Focus</span>
           <div class="stepper">
-            <button onclick={() => setMinutes('focusMinutes', s.focusMinutes - 5)} aria-label="Less focus time">−</button>
+            <button disabled={focusAtMin} onclick={() => stepMinutes('focusMinutes', -1)} aria-label="Less focus time">−</button>
             <span class="num">{s.focusMinutes}<small>min</small></span>
-            <button onclick={() => setMinutes('focusMinutes', s.focusMinutes + 5)} aria-label="More focus time">+</button>
+            <button disabled={focusAtMax} onclick={() => stepMinutes('focusMinutes', 1)} aria-label="More focus time">+</button>
           </div>
         </div>
 
         <div class="setting">
           <span class="setting-name">Break</span>
           <div class="stepper">
-            <button onclick={() => setMinutes('breakMinutes', s.breakMinutes - 1)} aria-label="Less break time">−</button>
+            <button disabled={breakAtMin} onclick={() => stepMinutes('breakMinutes', -1)} aria-label="Less break time">−</button>
             <span class="num">{s.breakMinutes}<small>min</small></span>
-            <button onclick={() => setMinutes('breakMinutes', s.breakMinutes + 1)} aria-label="More break time">+</button>
+            <button disabled={breakAtMax} onclick={() => stepMinutes('breakMinutes', 1)} aria-label="More break time">+</button>
           </div>
         </div>
 
@@ -914,7 +941,8 @@
     box-shadow: var(--shadow-sm);
     transition: filter 0.15s ease;
   }
-  .stepper button:hover { filter: brightness(0.97); }
+  .stepper button:hover:not(:disabled) { filter: brightness(0.97); }
+  .stepper button:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
   .num {
     min-width: 58px;
     text-align: center;
