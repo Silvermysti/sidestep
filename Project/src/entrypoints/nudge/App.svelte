@@ -7,7 +7,8 @@
   // reached for floats to the top.
   import { onMount } from 'svelte';
   import { browser } from '#imports';
-  import { lists } from '@/lib/storage';
+  import { lists, settings } from '@/lib/storage';
+  import { COMPANIONS, DEFAULT_COMPANION } from '@/lib/companions';
   import { parkThought } from '@/lib/parking';
   import { groupLinksBySite, linkTitle, linkUrl, siteGroup } from '@/lib/sites';
 
@@ -28,10 +29,16 @@
   let parkDraft = $state('');
   let parked = $state(false);
 
+  // Which pet naps on this page follows the companion chosen in settings.
+  let companionKey = $state(DEFAULT_COMPANION);
+  let pet = $derived(COMPANIONS[companionKey]);
+
   onMount(async () => {
     const l = await lists.getValue();
     groups = groupLinksBySite(l, from); // site you reached for floats to front
     loaded = true;
+    const cfg = await settings.getValue();
+    companionKey = cfg?.companion ?? DEFAULT_COMPANION;
   });
 
   // Save a stray thought to the parking lot, then clear the box and flash a note.
@@ -70,8 +77,8 @@
 <div class="clouds" aria-hidden="true"></div>
 
 <main>
-  <div class="sleeper-wrap">
-    <img class="sleeper" src="/scene/sleeping.png" alt="" />
+  <div class="sleeper-wrap" style="width:{pet.sleepW}px">
+    <img class="sleeper" src={pet.sleep} alt="" />
     <!-- Sleepy pixel "Z"s: they drift up and fade one after another, on a loop. -->
     <img class="z z1" src="/scene/z.png" alt="" />
     <img class="z z2" src="/scene/z.png" alt="" />
@@ -203,14 +210,14 @@
     .clouds { animation: none; }
   }
 
-  /* The sleeping bunny lies on top of the card's front edge — most of it above
-     the card, its body dipping onto the top so it reads as resting there. */
+  /* The sleeping companion lies on top of the card's front edge — most of it
+     above the card, its body dipping onto the top so it reads as resting there.
+     Width is set inline, per companion (see lib/companions.js). */
   .sleeper-wrap {
     position: absolute;
     top: 0;
     left: 50%;
     transform: translate(-50%, -80%);
-    width: 236px;
     z-index: 3;
     pointer-events: none;
   }

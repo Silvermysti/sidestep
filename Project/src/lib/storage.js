@@ -20,6 +20,7 @@ export const SETTINGS_DEFAULTS = {
   // string 'continuous' to keep cycling until you stop it yourself.
   cycles: 4,
   linkOrder: 'sequential', // 'sequential' (to-do style) | 'random'
+  companion: 'bunny', // which pet keeps you company — see lib/companions.js
 };
 
 // User configuration. (Stage 1 only really uses focus/break minutes; the rest

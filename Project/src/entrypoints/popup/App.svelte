@@ -4,6 +4,7 @@
   import { settings, timer, lists, allowances, parkingLot } from '@/lib/storage';
   import { parkThought } from '@/lib/parking';
   import { durationMs, formatMs, totalCycles } from '@/lib/timer';
+  import { COMPANIONS, COMPANION_KEYS, DEFAULT_COMPANION } from '@/lib/companions';
   import { hostnameOf, linkTitle, linkUrl, normalizeUrl, siteBuckets, siteKeyOf, siteLabel, siteToBlock } from '@/lib/sites';
 
   // Which top tab is showing. The popup is now split into pages instead of one
@@ -113,33 +114,11 @@
   // companion sits still when idle, paused, or on a break (it's a "body-double"
   // — it works alongside you, and rests when you rest). ~119ms/frame ≈ 8fps.
   //
-  // Each companion is one sprite set: `run` is its frames in play order, `sit`
-  // is the single idle frame, `frameMs` is how long each run frame shows, and
-  // `width` is how wide to draw it (the fox is longer/lower than the bunny, so
-  // it needs a different width to read at the same size). Switching companions
-  // later is just pointing `companion` at another key in here.
-  const COMPANIONS = {
-    bunny: {
-      run: [
-        '/bunny/Running1.png', '/bunny/Running2.png', '/bunny/Running3.png',
-        '/bunny/Running4.png', '/bunny/Running5.png',
-      ],
-      sit: '/bunny/Sitting.png',
-      frameMs: 119,
-      width: 190,
-    },
-    fox: {
-      run: [
-        '/fox/Running1.png', '/fox/Running2.png', '/fox/Running3.png',
-        '/fox/Running4.png', '/fox/Running5.png', '/fox/Running6.png',
-      ],
-      sit: '/fox/Sitting.png',
-      frameMs: 119,
-      width: 260,
-    },
-  };
-  // Which companion is on screen. A switching UI comes later; for now it's fixed.
-  let companion = $state('fox');
+  // Which pet is on screen comes from the saved settings (chosen on the Settings
+  // tab). The sprite sets themselves live in lib/companions.js, shared with the
+  // block page. `?? DEFAULT_COMPANION` covers older saved settings that predate
+  // the choice.
+  let companion = $derived(s?.companion ?? DEFAULT_COMPANION);
   let sprite = $derived(COMPANIONS[companion]);
 
   let bunnyFrame = $state(0);
@@ -322,6 +301,13 @@
     const from = at === -1 ? CYCLE_STEPS.indexOf(4) : at;
     const i = Math.max(0, Math.min(CYCLE_STEPS.length - 1, at === -1 ? from : from + dir));
     await settings.setValue({ ...s, cycles: CYCLE_STEPS[i] });
+  }
+
+  // Pick which pet keeps you company. Saved to settings so the habitat here and
+  // the block page both follow it. Changing it takes effect right away.
+  async function pickCompanion(key) {
+    if (key === companion) return;
+    await settings.setValue({ ...s, companion: key });
   }
 
   let cycles = $derived(s ? s.cycles : 4);
@@ -641,6 +627,26 @@
           which keeps cycling until you stop it yourself.
         </p>
         <p class="hint">Changes apply the next time you start (or reset) a session.</p>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <span class="card-label">Companion</span>
+        </div>
+        <div class="pets">
+          {#each COMPANION_KEYS as key}
+            <button
+              class="pet"
+              class:selected={companion === key}
+              onclick={() => pickCompanion(key)}
+              aria-pressed={companion === key}
+            >
+              <img src={COMPANIONS[key].icon} alt="" draggable="false" />
+              <span>{COMPANIONS[key].label}</span>
+            </button>
+          {/each}
+        </div>
+        <p class="hint">Your focus buddy runs alongside you here, and naps on the block page when you step past a distraction.</p>
       </section>
     {/if}
   {:else}
@@ -1099,6 +1105,35 @@
   .num small { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); margin-left: 2px; }
   .hint { margin: 2px 0 0; font-size: 11.5px; color: var(--ink-faint); }
   .hint.no-top { margin: -3px 0 0; line-height: 1.45; }
+
+  /* Companion picker — one tappable tile per animal, its sit pose as the icon. */
+  .pets { display: flex; gap: 10px; }
+  .pet {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px 10px;
+    border: 1.5px solid var(--line);
+    border-radius: var(--r);
+    background: var(--surface-2);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.05s ease;
+  }
+  .pet:hover { border-color: var(--accent-tint); }
+  .pet:active { transform: translateY(1px); }
+  .pet.selected {
+    border-color: var(--accent);
+    background: var(--accent-tint);
+  }
+  .pet img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    image-rendering: pixelated; /* keep the pixel-art crisp when scaled down */
+  }
+  .pet span { font-size: 12.5px; font-weight: 700; color: var(--ink); }
 
   /* Freedom-window status (banner on Focus, list on Blocked) */
   .freedom-banner {
