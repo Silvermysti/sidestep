@@ -237,16 +237,27 @@
   // obvious where it's about to land.
   let draftSite = $derived(linkDraft ? siteKeyOf(normalizeUrl(linkDraft)) : null);
 
+  // Save a change to settings. `s` is a Svelte reactive value, which means its
+  // nested block-list array stays wrapped in a reactive proxy (a stand-in object)
+  // even after we spread it. Handing that proxy to storage can save the block
+  // list as something that is no longer a plain array — and the blocker ignores a
+  // list that isn't a real array, so blocking would silently stop. $state.snapshot
+  // unwraps the proxy back into plain data first, so what we store is always the
+  // real thing. Every settings write goes through here.
+  function saveSettings(patch) {
+    return settings.setValue($state.snapshot({ ...s, ...patch }));
+  }
+
   // --- Sites to redirect (the user's own block-list) ---
   async function addSite() {
     const host = hostnameOf(normalizeUrl(siteDraft) ?? '');
     if (!host || sites.includes(host)) { siteDraft = ''; return; }
-    await settings.setValue({ ...s, distractingSites: [...sites, host] });
+    await saveSettings({ distractingSites: [...sites, host] });
     siteDraft = '';
   }
 
   async function removeSite(host) {
-    await settings.setValue({ ...s, distractingSites: sites.filter((x) => x !== host) });
+    await saveSettings({ distractingSites: sites.filter((x) => x !== host) });
   }
 
   // Block whatever site the active tab is on. We drop the path/query (so it's the
@@ -257,7 +268,7 @@
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     const host = siteToBlock(hostnameOf(tab?.url ?? '') ?? '');
     if (!host || sites.includes(host)) return;
-    await settings.setValue({ ...s, distractingSites: [...sites, host] });
+    await saveSettings({ distractingSites: [...sites, host] });
   }
 
   // --- Settings: session lengths ---
@@ -288,7 +299,7 @@
     const next = onPreset ? nearest + dir : nearest;
     const i = Math.max(0, Math.min(steps.length - 1, next));
 
-    await settings.setValue({ ...s, [field]: steps[i] });
+    await saveSettings({ [field]: steps[i] });
     // Sitting idle? Reset so the clock shows the new length straight away.
     if (t.status === 'idle') send('reset');
   }
@@ -300,14 +311,14 @@
     // An off-list value (or a missing one) snaps to the default of 4 rounds.
     const from = at === -1 ? CYCLE_STEPS.indexOf(4) : at;
     const i = Math.max(0, Math.min(CYCLE_STEPS.length - 1, at === -1 ? from : from + dir));
-    await settings.setValue({ ...s, cycles: CYCLE_STEPS[i] });
+    await saveSettings({ cycles: CYCLE_STEPS[i] });
   }
 
   // Pick which pet keeps you company. Saved to settings so the habitat here and
   // the block page both follow it. Changing it takes effect right away.
   async function pickCompanion(key) {
     if (key === companion) return;
-    await settings.setValue({ ...s, companion: key });
+    await saveSettings({ companion: key });
   }
 
   let cycles = $derived(s ? s.cycles : 4);

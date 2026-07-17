@@ -103,15 +103,29 @@ async function healSettings() {
     stored.focusMinutes == null ||
     stored.breakMinutes == null ||
     stored.cycles == null ||
-    stored.linkOrder == null;
+    stored.linkOrder == null ||
+    stored.companion == null;
   if (!needsFix) return;
   await settings.setValue({
     ...SETTINGS_DEFAULTS,
     ...stored,
-    distractingSites: Array.isArray(stored?.distractingSites)
-      ? stored.distractingSites
-      : SETTINGS_DEFAULTS.distractingSites,
+    distractingSites: healBlockList(stored?.distractingSites),
   });
+}
+
+// Recover the block list into a real array. A plain array is used as-is. If it
+// somehow got saved as an array-LIKE object (e.g. {0:'youtube.com',1:'x.com'} —
+// which can happen if a reactive value was stored without unwrapping), we salvage
+// the sites from it rather than throwing the user's list away. Only a truly
+// unusable value falls back to the defaults. This keeps blocking working even if
+// the list was saved in a bad shape, because isDistracting() ignores a non-array.
+function healBlockList(v: any): string[] {
+  if (Array.isArray(v)) return v;
+  if (v && typeof v === 'object') {
+    const salvaged = Object.values(v).filter((x) => typeof x === 'string') as string[];
+    if (salvaged.length) return salvaged;
+  }
+  return SETTINGS_DEFAULTS.distractingSites;
 }
 
 // Bring the saved lists up to date and make them safe to loop over.
