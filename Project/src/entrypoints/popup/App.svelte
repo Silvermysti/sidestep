@@ -699,7 +699,7 @@
     aspect-ratio: 4 / 5;
     border-radius: var(--r-lg);
     border: 1px solid var(--line);
-    background: linear-gradient(180deg, #FFFDFA 0%, var(--accent-tint) 100%);
+    background: url(/scene/background.png) center / cover no-repeat;
     box-shadow: var(--shadow);
     overflow: hidden;
     transition: background 0.3s ease;
@@ -753,10 +753,9 @@
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 0;
-    height: 26%;
-    background: color-mix(in srgb, var(--accent) 20%, transparent);
-    border-top: 2px solid color-mix(in srgb, var(--accent) 34%, transparent);
+    bottom: -3%;
+    height: 55%;
+    background: url(/scene/grass.png) top center / cover no-repeat;
   }
 
   /* Parked thoughts — the "for later" list, filled from the redirect page */
