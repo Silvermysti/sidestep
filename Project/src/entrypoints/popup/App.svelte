@@ -116,6 +116,9 @@
   const SIT_FRAME = '/bunny/Sitting.png';
   let bunnyFrame = $state(0);
   let bunnyRunning = $derived(t?.status === 'running' && isFocus);
+  // The grass scroll stays *attached* through both running and paused so that
+  // pausing freezes it in place (play-state) instead of snapping back to start.
+  let bunnyActive = $derived((t?.status === 'running' || t?.status === 'paused') && isFocus);
   // Start/stop the frame-swap loop whenever the running state flips. Returning
   // the cleanup clears the old interval before the next run — no leaked timers.
   $effect(() => {
@@ -364,7 +367,7 @@
           <img class="bunny-sprite" src={bunnyRunning ? RUN_FRAMES[bunnyFrame] : SIT_FRAME} alt="" draggable="false" />
         </div>
 
-        <div class="ground"></div>
+        <div class="ground" class:active={bunnyActive} class:running={bunnyRunning}></div>
       </div>
 
       <div class="bar"><div class="fill" style="width: {progress * 100}%"></div></div>
@@ -755,7 +758,34 @@
     right: 0;
     bottom: -3%;
     height: 55%;
-    background: url(/scene/grass.png) top center / cover no-repeat;
+    background-image: url(/scene/grass.png);
+    background-repeat: repeat-x;
+    /* Fixed tile width (the strip is 1985px wide) so the scroll loops exactly. */
+    background-size: 1985px 100%;
+    background-position: left top;
+  }
+  /* While the bunny runs it faces left and stays put, so scroll the meadow to
+     the RIGHT to sell forward motion. One full tile (1985px) takes 8s, roughly
+     one bunny body-length per run cycle — a run, not a slide.
+     steps(134) hops the grass in discrete ~15px jumps (~60ms, about twice the
+     bunny's frame rate) so it shares the pixel-art look without stuttering.
+     The animation is attached whenever the focus session is `active` (running
+     OR paused) and defaults to paused; adding `running` plays it. That way a
+     pause freezes the grass in place and resume continues from there, instead
+     of snapping back to the start. */
+  .ground.active {
+    animation: grass-scroll 8s steps(134) infinite;
+    animation-play-state: paused;
+  }
+  .ground.active.running {
+    animation-play-state: running;
+  }
+  @keyframes grass-scroll {
+    from { background-position: 0 top; }
+    to   { background-position: 1985px top; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ground.active { animation: none; }
   }
 
   /* Parked thoughts — the "for later" list, filled from the redirect page */
