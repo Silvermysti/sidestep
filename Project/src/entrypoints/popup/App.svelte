@@ -631,10 +631,8 @@
             <button disabled={cyclesAtMax} onclick={() => stepCycles(1)} aria-label="More rounds">+</button>
           </div>
         </div>
-      </section>
 
-      <section class="card">
-        <div class="card-head">
+        <div class="card-head card-sub">
           <span class="card-label">Companion</span>
         </div>
         <div class="pets">
@@ -719,6 +717,9 @@
   }
 
   .card-head { display: flex; align-items: center; gap: 8px; }
+  /* A second group inside the same card — a divider keeps the panel continuous
+     instead of splitting it into two separate boxes. */
+  .card-sub { padding-top: 12px; border-top: 1px solid var(--line); }
   .card-label { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
   .topic-pill {
     margin-left: auto;
