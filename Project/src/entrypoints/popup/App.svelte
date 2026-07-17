@@ -795,8 +795,8 @@
     background-size: 1985px 100%;
     background-position: left top;
   }
-  /* While the companion runs it faces right and stays put, so scroll the meadow
-     to the LEFT to sell forward motion. One full tile (1985px) takes 9.2s — a
+  /* While the companion runs it faces left and stays put, so scroll the meadow
+     to the RIGHT to sell forward motion. One full tile (1985px) takes 9.2s — a
      run, not a slide. steps(134) hops the grass in discrete ~15px jumps (~60ms,
      about twice the run frame rate) so it shares the pixel-art look without
      stuttering. The animation is attached whenever the focus session is `active`
@@ -811,8 +811,8 @@
     animation-play-state: running;
   }
   @keyframes grass-scroll {
-    from { background-position: 1985px top; }
-    to   { background-position: 0 top; }
+    from { background-position: 0 top; }
+    to   { background-position: 1985px top; }
   }
   @media (prefers-reduced-motion: reduce) {
     .ground.active { animation: none; }
