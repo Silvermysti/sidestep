@@ -41,8 +41,11 @@
       pl = await parkingLot.getValue();
     })();
 
-    // Warm the browser cache so the hop cycle doesn't flicker on its first loop.
-    for (const src of [...RUN_FRAMES, SIT_FRAME]) { const im = new Image(); im.src = src; }
+    // Warm the browser cache so no run cycle flickers on its first loop. We warm
+    // every companion's frames, so switching companions later is instant too.
+    for (const c of Object.values(COMPANIONS)) {
+      for (const src of [...c.run, c.sit]) { const im = new Image(); im.src = src; }
+    }
 
     const unwatchT = timer.watch((v) => (t = v));
     const unwatchS = settings.watch((v) => (s = v));
@@ -105,15 +108,40 @@
   let progress = $derived(total > 0 ? Math.min(1, 1 - remaining / total) : 0);
   let isFocus = $derived(t?.mode === 'focus');
 
-  // --- Bunny companion ---
-  // The 5-frame hop plays only while a focus session is actually running; the
-  // bunny sits still when idle, paused, or on a break (it's a "body-double" —
-  // it works alongside you, and rests when you rest). 119ms/frame ≈ 8fps.
-  const RUN_FRAMES = [
-    '/bunny/Running1.png', '/bunny/Running2.png', '/bunny/Running3.png',
-    '/bunny/Running4.png', '/bunny/Running5.png',
-  ];
-  const SIT_FRAME = '/bunny/Sitting.png';
+  // --- Companion ---
+  // The run cycle plays only while a focus session is actually running; the
+  // companion sits still when idle, paused, or on a break (it's a "body-double"
+  // — it works alongside you, and rests when you rest). ~119ms/frame ≈ 8fps.
+  //
+  // Each companion is one sprite set: `run` is its frames in play order, `sit`
+  // is the single idle frame, `frameMs` is how long each run frame shows, and
+  // `width` is how wide to draw it (the fox is longer/lower than the bunny, so
+  // it needs a different width to read at the same size). Switching companions
+  // later is just pointing `companion` at another key in here.
+  const COMPANIONS = {
+    bunny: {
+      run: [
+        '/bunny/Running1.png', '/bunny/Running2.png', '/bunny/Running3.png',
+        '/bunny/Running4.png', '/bunny/Running5.png',
+      ],
+      sit: '/bunny/Sitting.png',
+      frameMs: 119,
+      width: 190,
+    },
+    fox: {
+      run: [
+        '/fox/Running1.png', '/fox/Running2.png', '/fox/Running3.png',
+        '/fox/Running4.png', '/fox/Running5.png', '/fox/Running6.png',
+      ],
+      sit: '/fox/Sitting.png',
+      frameMs: 119,
+      width: 260,
+    },
+  };
+  // Which companion is on screen. A switching UI comes later; for now it's fixed.
+  let companion = $state('fox');
+  let sprite = $derived(COMPANIONS[companion]);
+
   let bunnyFrame = $state(0);
   let bunnyRunning = $derived(t?.status === 'running' && isFocus);
   // The grass scroll stays *attached* through both running and paused so that
@@ -121,9 +149,12 @@
   let bunnyActive = $derived((t?.status === 'running' || t?.status === 'paused') && isFocus);
   // Start/stop the frame-swap loop whenever the running state flips. Returning
   // the cleanup clears the old interval before the next run — no leaked timers.
+  // Reading `sprite` here means the loop restarts (at the right speed and length)
+  // if the companion ever changes mid-run.
   $effect(() => {
     if (!bunnyRunning) { bunnyFrame = 0; return; }
-    const id = setInterval(() => { bunnyFrame = (bunnyFrame + 1) % RUN_FRAMES.length; }, 119);
+    const frames = sprite.run.length;
+    const id = setInterval(() => { bunnyFrame = (bunnyFrame + 1) % frames; }, sprite.frameMs);
     return () => clearInterval(id);
   });
 
@@ -364,7 +395,7 @@
         </div>
 
         <div class="bunny-slot">
-          <img class="bunny-sprite" src={bunnyRunning ? RUN_FRAMES[bunnyFrame] : SIT_FRAME} alt="" draggable="false" />
+          <img class="bunny-sprite" style="width:{sprite.width}px" src={bunnyRunning ? sprite.run[bunnyFrame % sprite.run.length] : sprite.sit} alt="" draggable="false" />
         </div>
 
         <div class="ground" class:active={bunnyActive} class:running={bunnyRunning}></div>
@@ -745,7 +776,7 @@
     justify-content: center;
   }
   .bunny-sprite {
-    width: 190px;
+    /* Width is set inline, per companion (bunny vs fox read at different sizes). */
     height: auto;
     user-select: none;
     -webkit-user-drag: none;
@@ -766,7 +797,7 @@
   }
   /* While the bunny runs it faces left and stays put, so scroll the meadow to
      the RIGHT to sell forward motion. One full tile (1985px) takes 8s, roughly
-     one bunny body-length per run cycle — a run, not a slide.
+     one bunny body-length per run cycle — a run, not a slide (9.2s per tile).
      steps(134) hops the grass in discrete ~15px jumps (~60ms, about twice the
      bunny's frame rate) so it shares the pixel-art look without stuttering.
      The animation is attached whenever the focus session is `active` (running
@@ -774,7 +805,7 @@
      pause freezes the grass in place and resume continues from there, instead
      of snapping back to the start. */
   .ground.active {
-    animation: grass-scroll 8s steps(134) infinite;
+    animation: grass-scroll 9.2s steps(134) infinite;
     animation-play-state: paused;
   }
   .ground.active.running {
