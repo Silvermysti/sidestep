@@ -631,13 +631,6 @@
             <button disabled={cyclesAtMax} onclick={() => stepCycles(1)} aria-label="More rounds">+</button>
           </div>
         </div>
-
-        <p class="hint">
-          A round is one focus session and its break. Rounds run back to back on their
-          own, and the timer stops when the last one finishes. Push past 12 to reach ∞,
-          which keeps cycling until you stop it yourself.
-        </p>
-        <p class="hint">Changes apply the next time you start (or reset) a session.</p>
       </section>
 
       <section class="card">
