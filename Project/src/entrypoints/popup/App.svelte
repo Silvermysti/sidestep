@@ -795,15 +795,14 @@
     background-size: 1985px 100%;
     background-position: left top;
   }
-  /* While the bunny runs it faces left and stays put, so scroll the meadow to
-     the RIGHT to sell forward motion. One full tile (1985px) takes 8s, roughly
-     one bunny body-length per run cycle — a run, not a slide (9.2s per tile).
-     steps(134) hops the grass in discrete ~15px jumps (~60ms, about twice the
-     bunny's frame rate) so it shares the pixel-art look without stuttering.
-     The animation is attached whenever the focus session is `active` (running
-     OR paused) and defaults to paused; adding `running` plays it. That way a
-     pause freezes the grass in place and resume continues from there, instead
-     of snapping back to the start. */
+  /* While the companion runs it faces right and stays put, so scroll the meadow
+     to the LEFT to sell forward motion. One full tile (1985px) takes 9.2s — a
+     run, not a slide. steps(134) hops the grass in discrete ~15px jumps (~60ms,
+     about twice the run frame rate) so it shares the pixel-art look without
+     stuttering. The animation is attached whenever the focus session is `active`
+     (running OR paused) and defaults to paused; adding `running` plays it. That
+     way a pause freezes the grass in place and resume continues from there,
+     instead of snapping back to the start. */
   .ground.active {
     animation: grass-scroll 9.2s steps(134) infinite;
     animation-play-state: paused;
@@ -812,8 +811,8 @@
     animation-play-state: running;
   }
   @keyframes grass-scroll {
-    from { background-position: 0 top; }
-    to   { background-position: 1985px top; }
+    from { background-position: 1985px top; }
+    to   { background-position: 0 top; }
   }
   @media (prefers-reduced-motion: reduce) {
     .ground.active { animation: none; }
