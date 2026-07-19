@@ -55,6 +55,14 @@ export const heartbeat = storage.defineItem('local:heartbeat', {
   fallback: null,
 });
 
+// Where the floating on-page companion (the content-script widget) was last
+// dragged, as viewport pixels from the top-left. Null until first placed, which
+// means "use the default bottom-right corner". Shared across tabs so the pet stays
+// in the same spot everywhere.
+export const overlay = storage.defineItem('local:overlay', {
+  fallback: { x: null, y: null },
+});
+
 // The user's own useful links, bucketed by the SITE each one lives on.
 //   sites   : { siteKey: [ { url, title }, ... ] }
 //   cursors : { siteKey: n }  — which link to serve next FOR THAT SITE
