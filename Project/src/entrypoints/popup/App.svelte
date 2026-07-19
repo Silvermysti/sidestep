@@ -121,6 +121,12 @@
   let companion = $derived(s?.companion ?? DEFAULT_COMPANION);
   let sprite = $derived(COMPANIONS[companion]);
 
+  // Grass scroll duration. The CSS baseline is one tile per 9.2s; a companion can
+  // scale that with `grassSpeed` (1 = normal, <1 = slower). We feed the result in
+  // as an inline animation-duration, which overrides the CSS shorthand's 9.2s.
+  const BASE_GRASS_S = 9.2;
+  let grassSeconds = $derived((BASE_GRASS_S / (sprite.grassSpeed ?? 1)).toFixed(3));
+
   let bunnyFrame = $state(0);
   let bunnyRunning = $derived(t?.status === 'running' && isFocus);
   // The grass scroll stays *attached* through both running and paused so that
@@ -395,7 +401,7 @@
           <img class="bunny-sprite" style="width:{sprite.width}px" src={bunnyRunning ? sprite.run[bunnyFrame % sprite.run.length] : sprite.sit} alt="" draggable="false" />
         </div>
 
-        <div class="ground" class:active={bunnyActive} class:running={bunnyRunning}></div>
+        <div class="ground" class:active={bunnyActive} class:running={bunnyRunning} style="animation-duration: {grassSeconds}s"></div>
       </div>
 
       <div class="bar"><div class="fill" style="width: {progress * 100}%"></div></div>

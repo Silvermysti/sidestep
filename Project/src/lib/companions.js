@@ -12,6 +12,8 @@
 //   frameMs — how long each run frame shows (its run speed)
 //   width   — how wide to draw it in the popup habitat (px)
 //   sleepW  — how wide to draw the sleeping pose on the block page (px)
+//   grassSpeed — how fast the grass scrolls under this pet, relative to normal
+//                (1 = normal, 0.95 = 5% slower). Optional; defaults to 1.
 export const COMPANIONS = {
   bunny: {
     label: 'Bunny',
@@ -51,6 +53,7 @@ export const COMPANIONS = {
     frameMs: 119,
     width: 270,
     sleepW: 250,
+    grassSpeed: 0.95, // cat strolls a touch slower — grass scrolls 5% slower
   },
 };
 
