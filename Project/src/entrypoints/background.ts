@@ -6,7 +6,7 @@
 // if it has gone to sleep in the meantime (service workers sleep to save memory,
 // which is why a normal setInterval countdown would NOT survive here).
 
-import { allowances, lists, settings, SETTINGS_DEFAULTS, timer } from '@/lib/storage';
+import { allowances, heartbeat, lists, settings, SETTINGS_DEFAULTS, timer } from '@/lib/storage';
 import {
   activeAllowance,
   buildAllowedKeys,
@@ -39,6 +39,10 @@ const TICK_ALARM = 'sidestep-tick';
 // A timed freedom window uses an alarm named `sidestep-freedom:<site>` so it can
 // clean itself up when it expires (e.g. "youtube.com: free for 15 min").
 const FREEDOM_PREFIX = 'sidestep-freedom:';
+// The safety tick runs once a minute, so a heartbeat gap much bigger than that
+// means nothing of ours ran for a while — the laptop slept or Chrome was closed.
+// Anything past this counts as "we were away", and a running session is paused.
+const WAKE_GAP_MS = 2 * 60 * 1000;
 
 export default defineBackground(() => {
   // Settings saved by an older version may be missing keys added later (the
@@ -56,7 +60,7 @@ export default defineBackground(() => {
   // Chrome waking us for an event). Any session that ran out while we were asleep
   // is rolled forward now, and the once-a-minute safety tick is (re)armed.
   browser.alarms.create(TICK_ALARM, { periodInMinutes: 1 });
-  reconcile();
+  wake();
 
   // Commands coming from the popup.
   browser.runtime.onMessage.addListener((message) => {
@@ -66,7 +70,7 @@ export default defineBackground(() => {
   // The clock waking us up: a session due to finish, the safety tick, or a
   // freedom window reaching its end so we can clean it up.
   browser.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === TIMER_ALARM || alarm.name === TICK_ALARM) reconcile();
+    if (alarm.name === TIMER_ALARM || alarm.name === TICK_ALARM) wake();
     else if (alarm.name.startsWith(FREEDOM_PREFIX)) {
       expireAllowance(alarm.name.slice(FREEDOM_PREFIX.length));
     }
@@ -251,6 +255,9 @@ async function handleCommand(message: any) {
 
   await timer.setValue(next);
   await syncAlarm(next);
+  // Starting or resuming means we're awake right now — reset the heartbeat so the
+  // next tick doesn't mistake an old baseline for a sleep.
+  if (action === 'start' || action === 'resume') await heartbeat.setValue(Date.now());
   return next;
 }
 
@@ -304,6 +311,51 @@ async function syncAlarm(t: any) {
   if (t.status === 'running' && t.endsAt) {
     browser.alarms.create(TIMER_ALARM, { when: t.endsAt });
   }
+}
+
+// A single wake-up. First the sleep guard (which may pause a session left through
+// a suspend), then the roll-forward for anything genuinely due. Order matters: if
+// beat() pauses, reconcile() sees a paused timer and correctly does nothing, so a
+// session slept through is paused rather than burned. Used on startup and on every
+// timer/tick alarm.
+async function wake() {
+  await beat();
+  await reconcile();
+}
+
+// Heartbeat + sleep guard.
+//
+// Records that we're awake NOW, and compares against the last time we were awake.
+// A gap bigger than WAKE_GAP_MS can only mean the machine was suspended (asleep)
+// or Chrome was fully closed — none of our timers, alarms, or code run then. If a
+// session was running across that gap, we PAUSE it at the time it had left when we
+// last saw it (`last`), not now, so the missing time never counts against it. The
+// user comes back to a paused session and resumes when they're ready.
+async function beat() {
+  const now = Date.now();
+  const last = await heartbeat.getValue();
+  await heartbeat.setValue(now);
+  if (last == null) return; // first ever beat — no baseline to judge against
+  if (now - last <= WAKE_GAP_MS) return; // a normal, awake tick
+
+  const t: any = await timer.getValue();
+  if (t.status !== 'running') return; // idle or already paused: nothing to protect
+
+  const paused = pauseState(t, last); // remaining as of the last awake moment
+  await timer.setValue(paused);
+  await syncAlarm(paused);
+  notifyAway();
+}
+
+// Tell the user why their timer stopped, so a paused session on wake reads as
+// intentional rather than a glitch.
+function notifyAway() {
+  browser.notifications.create({
+    type: 'basic',
+    iconUrl: browser.runtime.getURL('/icon/128.png'),
+    title: 'Timer paused',
+    message: "You were away, so your session is paused. Resume when you're ready.",
+  });
 }
 
 // Bring the timer up to date with the wall clock.

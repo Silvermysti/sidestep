@@ -46,6 +46,15 @@ export const timer = storage.defineItem('local:timer', {
   },
 });
 
+// A once-a-minute "we're still awake" heartbeat, used only by the background.
+// Nothing in the extension runs while the laptop sleeps (or Chrome is closed), so
+// on wake a gap far bigger than the tick means we were suspended. The background
+// uses that to PAUSE a running session instead of counting the missing time.
+// Null until the first beat.
+export const heartbeat = storage.defineItem('local:heartbeat', {
+  fallback: null,
+});
+
 // The user's own useful links, bucketed by the SITE each one lives on.
 //   sites   : { siteKey: [ { url, title }, ... ] }
 //   cursors : { siteKey: n }  — which link to serve next FOR THAT SITE
