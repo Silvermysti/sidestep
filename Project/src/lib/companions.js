@@ -39,6 +39,19 @@ export const COMPANIONS = {
     width: 260,
     sleepW: 268,
   },
+  cat: {
+    label: 'Cat',
+    run: [
+      '/cat/Running1.png', '/cat/Running2.png', '/cat/Running3.png',
+      '/cat/Running4.png', '/cat/Running5.png', '/cat/Running6.png',
+    ],
+    sit: '/cat/Sitting.png',
+    sleep: '/cat/Sleeping.png',
+    icon: '/cat/Icon.png',
+    frameMs: 119,
+    width: 270,
+    sleepW: 250,
+  },
 };
 
 // The order the picker shows them in, and the default for a fresh install / any
