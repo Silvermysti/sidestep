@@ -870,20 +870,20 @@
     height: 55%;
     background-image: url(/scene/grass.png);
     background-repeat: repeat-x;
-    /* Fixed tile width (the strip is 1985px wide) so the scroll loops exactly. */
-    background-size: 1985px 100%;
+    /* Fixed tile width (the strip is 1737px wide) so the scroll loops exactly. */
+    background-size: 1737px 100%;
     background-position: left top;
   }
   /* While the companion runs it faces left and stays put, so scroll the meadow
-     to the RIGHT to sell forward motion. One full tile (1985px) takes 9.2s — a
-     run, not a slide. steps(134) hops the grass in discrete ~15px jumps (~60ms,
+     to the RIGHT to sell forward motion. One full tile (1737px) takes 9.2s — a
+     run, not a slide. steps(116) hops the grass in discrete ~15px jumps (~80ms,
      about twice the run frame rate) so it shares the pixel-art look without
      stuttering. The animation is attached whenever the focus session is `active`
      (running OR paused) and defaults to paused; adding `running` plays it. That
      way a pause freezes the grass in place and resume continues from there,
      instead of snapping back to the start. */
   .ground.active {
-    animation: grass-scroll 9.2s steps(134) infinite;
+    animation: grass-scroll 9.2s steps(116) infinite;
     animation-play-state: paused;
   }
   .ground.active.running {
@@ -891,7 +891,7 @@
   }
   @keyframes grass-scroll {
     from { background-position: 0 top; }
-    to   { background-position: 1985px top; }
+    to   { background-position: 1737px top; }
   }
   @media (prefers-reduced-motion: reduce) {
     .ground.active { animation: none; }
