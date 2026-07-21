@@ -16,7 +16,7 @@
   let s = $state(null);
   let l = $state(null);
   let al = $state(null); // active freedom windows: { site: expiry }
-  let prog = $state(null); // gamification: { xp, hunger } — drives the two meters
+  let prog = $state(null); // gamification: { xp } — drives the XP bar
   let pl = $state([]); // parked thoughts: [{ text, savedAt, done }]
   let parkDraft = $state(''); // the "jot a thought" box on the Focus tab
   let adding = $state(false); // is that box open? kept shut so the list stays easy to read
@@ -143,11 +143,11 @@
     saveSettings({ theme: key });
   }
 
-  // --- XP + hunger meters ---
-  // XP is measured in focus minutes; hunger is a 0..100 pet-care meter. Both are
-  // owned by the background (lib/storage `progress`) — here we only display them.
+  // --- XP meter ---
+  // XP is measured in focus minutes, owned by the background (lib/storage
+  // `progress`) — here we only display it. It only ever grows (earned by
+  // focusing), so a companion stays unlocked once earned.
   let xp = $derived(prog?.xp ?? 0);
-  let hunger = $derived(Math.max(0, Math.min(100, prog?.hunger ?? 100)));
   // The next pet still locked at this XP (companions are listed in ascending
   // unlock order), and the XP already banked toward it, so the XP bar fills from
   // one milestone to the next rather than from zero every time.
@@ -159,8 +159,6 @@
   let xpCaption = $derived(
     nextLock ? `${nextLock.label} unlocks in ${Math.max(0, Math.ceil(nextLock.unlockAt - xp))} min` : 'All animals unlocked'
   );
-  let hungerLabel = $derived(hunger <= 0 ? 'Starving!' : hunger < 25 ? 'Hungry' : '');
-  let hungerLow = $derived(hunger < 25);
 
   // Grass scroll duration. The CSS baseline is one tile per 9.2s; a companion can
   // scale that with `grassSpeed` (1 = normal, <1 = slower). We feed the result in
@@ -459,30 +457,26 @@
         </div>
 
         <div class="ground" class:active={bunnyActive} class:running={bunnyRunning} style="animation-duration: {grassSeconds}s"></div>
+      </div>
 
-        <!-- The two pet stats sit ON the grass as matching in-game bars: chunky
-             pixel styling (hard edges, dark outline, notched fill) to match the
-             sprite art. XP (gold) climbs as you focus and unlocks companions;
-             Hunger (green) falls while you're away and, once empty, drains XP. -->
-        <div class="stat-bars">
-          <div class="stat-row">
-            <span class="stat-label">XP</span>
-            <div class="stat-bar">
-              <div class="stat-fill xp" style="width: {xpFill * 100}%"></div>
-              <span class="stat-cap">{xpCaption}</span>
-            </div>
+      <!-- Two matching pixel bars under the scene: Time (session progress) over XP
+           (focus progress toward the next companion unlock). The clock in the sky
+           gives the exact time; these show progress at a glance. -->
+      <div class="stat-bars">
+        <div class="stat-row">
+          <span class="stat-label">Time</span>
+          <div class="stat-bar">
+            <div class="stat-fill timer" style="width: {progress * 100}%"></div>
           </div>
-          <div class="stat-row">
-            <span class="stat-label">Hunger</span>
-            <div class="stat-bar">
-              <div class="stat-fill hunger" class:low={hungerLow} style="width: {hunger}%"></div>
-              <span class="stat-cap">{hungerLabel}</span>
-            </div>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">XP</span>
+          <div class="stat-bar">
+            <div class="stat-fill xp" style="width: {xpFill * 100}%"></div>
+            <span class="stat-cap">{xpCaption}</span>
           </div>
         </div>
       </div>
-
-      <div class="bar"><div class="fill" style="width: {progress * 100}%"></div></div>
 
       <div class="controls">
         {#if t.status === 'idle'}
@@ -1061,32 +1055,15 @@
   .confirm-yes:hover,
   .confirm-no:hover { text-decoration: underline; }
 
-  /* Progress */
-  .bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
-  .fill {
-    height: 100%;
-    border-radius: 999px;
-    background: var(--accent);
-    transition: width 0.3s ease, background 0.3s ease;
-  }
-
-
-  /* The pixel-art XP bar that sits on the grass inside the habitat. Everything
-     here fights the soft/rounded look on purpose: hard corners, a thick dark
-     outline like a sprite, a chunky offset shadow, and notches cut into the fill
-     so it reads as blocky "cells" instead of a smooth gradient. */
-  /* The two pet-stat bars, stacked on the grass. Both share ONE pixel style
-     (dark outline, notched fill, chunky offset shadow); only the fill colour
-     differs — gold XP, green hunger — so they read as a matched pair. */
+  /* The two stat bars, stacked below the scene: Time over XP. They keep the
+     pixel-art look (hard corners, thick dark outline, chunky offset shadow,
+     notched fill reading as blocky "cells") to match the sprite art; only the
+     fill colour differs — blue Time, gold XP — so they read as a matched pair. */
   .stat-bars {
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    bottom: 12px;
-    z-index: 2;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    margin-top: 2px;
   }
   .stat-row {
     display: flex;
@@ -1094,16 +1071,15 @@
     align-items: center;
     gap: 8px;
   }
-  /* Name tag on the scene, left of the bar. White with a dark pixel outline so it
-     stays readable over the grass. Fixed width so both bars start at the same x. */
+  /* Name tag left of the bar. Dark ink (these sit on the cream panel, not the
+     grass). Fixed width so both bars start at the same x. */
   .stat-label {
     flex: none;
-    min-width: 46px;
+    min-width: 42px;
     font-size: 12px;
     font-weight: 800;
-    letter-spacing: 0.5px;
-    color: #fff;
-    text-shadow: 1px 1px 0 #2f2416, -1px 1px 0 #2f2416, 1px -1px 0 #2f2416, -1px -1px 0 #2f2416;
+    letter-spacing: 0.3px;
+    color: var(--ink);
   }
   .stat-bar {
     position: relative; /* anchor for the caption overlaid inside */
@@ -1142,17 +1118,11 @@
       repeating-linear-gradient(90deg, transparent 0, transparent 6px, rgba(0, 0, 0, 0.22) 6px, rgba(0, 0, 0, 0.22) 8px),
       linear-gradient(#ffe27a 0, #f5b301 45%, #cf8b00 100%);
   }
-  /* Leafy green when the pet is fed — earthy, matches the grass. */
-  .stat-fill.hunger {
+  /* Calm blue Time bar — distinct from the gold XP, fills as the session runs. */
+  .stat-fill.timer {
     background-image:
       repeating-linear-gradient(90deg, transparent 0, transparent 6px, rgba(0, 0, 0, 0.22) 6px, rgba(0, 0, 0, 0.22) 8px),
-      linear-gradient(#c3e88a 0, #7fb43f 45%, #4e7d25 100%);
-  }
-  /* Warm terracotta when hungry/starving — a soft alarm, not a harsh web red. */
-  .stat-fill.hunger.low {
-    background-image:
-      repeating-linear-gradient(90deg, transparent 0, transparent 6px, rgba(0, 0, 0, 0.22) 6px, rgba(0, 0, 0, 0.22) 8px),
-      linear-gradient(#f0a878 0, #d2603c 45%, #a63c1e 100%);
+      linear-gradient(#a9d3f0 0, #5b9bd5 45%, #326fa8 100%);
   }
   @media (prefers-reduced-motion: reduce) {
     .stat-fill { transition: none; }
