@@ -426,20 +426,21 @@
         </div>
 
         <div class="ground" class:active={bunnyActive} class:running={bunnyRunning} style="animation-duration: {grassSeconds}s"></div>
+
+        <!-- XP sits ON the grass like an in-game bar: chunky pixel styling (hard
+             edges, dark outline, notched fill) to match the sprite art rather than
+             the soft rounded UI below. -->
+        <div class="xp-hud">
+          <div class="xp-cap">{xpCaption}</div>
+          <div class="xp-bar"><div class="xp-fill" style="width: {xpFill * 100}%"></div></div>
+        </div>
       </div>
 
       <div class="bar"><div class="fill" style="width: {progress * 100}%"></div></div>
 
-      <!-- XP grows with every focused minute and unlocks animals; hunger falls
-           while you're away and, once empty, starves the pet so its XP drains. -->
+      <!-- Hunger falls while you're away and, once empty, starves the pet so its
+           XP drains. (The XP bar itself sits on the grass, up in the habitat.) -->
       <div class="meters">
-        <div class="meter">
-          <div class="meter-top">
-            <span class="meter-name">XP</span>
-            <span class="meter-note">{xpCaption}</span>
-          </div>
-          <div class="bar"><div class="fill xp" style="width: {xpFill * 100}%"></div></div>
-        </div>
         <div class="meter">
           <div class="meter-top">
             <span class="meter-name">Hunger</span>
@@ -1005,9 +1006,62 @@
   .meter-name { font-size: 11px; font-weight: 800; letter-spacing: 0.03em; color: var(--ink-soft); text-transform: uppercase; }
   .meter-note { font-size: 11px; color: var(--ink-soft); }
   .meter-note.warn { color: #e05a4d; font-weight: 700; }
-  .fill.xp { background: #f5b301; } /* gold — earned experience */
   .fill.hunger { background: #5bb85b; } /* green — a well-fed pet */
   .fill.hunger.low { background: #e05a4d; } /* red — hungry / starving */
+
+  /* The pixel-art XP bar that sits on the grass inside the habitat. Everything
+     here fights the soft/rounded look on purpose: hard corners, a thick dark
+     outline like a sprite, a chunky offset shadow, and notches cut into the fill
+     so it reads as blocky "cells" instead of a smooth gradient. */
+  .xp-hud {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 14px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .xp-cap {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    color: #4a2f12;
+    background: color-mix(in srgb, #ffe08a 82%, transparent);
+    border: 2px solid #2f2416;
+    padding: 1px 7px;
+    image-rendering: pixelated;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
+  }
+  .xp-bar {
+    width: 100%;
+    height: 15px;
+    padding: 2px;
+    background: #6b4a2b; /* dark earthy track under the fill */
+    border: 3px solid #2f2416; /* the sprite-style outline */
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25); /* chunky, offset like a sticker */
+    image-rendering: pixelated;
+  }
+  .xp-fill {
+    height: 100%;
+    background:
+      /* notch lines every 8px carve the fill into pixel "cells" */
+      repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent 6px,
+        rgba(0, 0, 0, 0.22) 6px,
+        rgba(0, 0, 0, 0.22) 8px
+      ),
+      /* gold, with a bright top edge and a darker base for a beveled look */
+      linear-gradient(#ffe27a 0, #f5b301 45%, #cf8b00 100%);
+    transition: width 0.3s steps(24); /* advances in chunky jumps, not a smooth glide */
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .xp-fill { transition: none; }
+  }
 
   /* Controls */
   .controls { display: flex; gap: 9px; }
