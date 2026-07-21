@@ -427,31 +427,29 @@
 
         <div class="ground" class:active={bunnyActive} class:running={bunnyRunning} style="animation-duration: {grassSeconds}s"></div>
 
-        <!-- XP sits ON the grass like an in-game bar: chunky pixel styling (hard
-             edges, dark outline, notched fill) to match the sprite art rather than
-             the soft rounded UI below. -->
-        <div class="xp-hud">
-          <span class="xp-label">XP</span>
-          <div class="xp-bar">
-            <div class="xp-fill" style="width: {xpFill * 100}%"></div>
-            <span class="xp-cap">{xpCaption}</span>
+        <!-- The two pet stats sit ON the grass as matching in-game bars: chunky
+             pixel styling (hard edges, dark outline, notched fill) to match the
+             sprite art. XP (gold) climbs as you focus and unlocks companions;
+             Hunger (green) falls while you're away and, once empty, drains XP. -->
+        <div class="stat-bars">
+          <div class="stat-row">
+            <span class="stat-label">XP</span>
+            <div class="stat-bar">
+              <div class="stat-fill xp" style="width: {xpFill * 100}%"></div>
+              <span class="stat-cap">{xpCaption}</span>
+            </div>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Hunger</span>
+            <div class="stat-bar">
+              <div class="stat-fill hunger" class:low={hungerLow} style="width: {hunger}%"></div>
+              <span class="stat-cap">{hungerLabel}</span>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="bar"><div class="fill" style="width: {progress * 100}%"></div></div>
-
-      <!-- Hunger falls while you're away and, once empty, starves the pet so its
-           XP drains. (The XP bar itself sits on the grass, up in the habitat.) -->
-      <div class="meters">
-        <div class="meter">
-          <div class="meter-top">
-            <span class="meter-name">Hunger</span>
-            {#if hungerLabel}<span class="meter-note warn">{hungerLabel}</span>{/if}
-          </div>
-          <div class="bar"><div class="fill hunger" class:low={hungerLow} style="width: {hunger}%"></div></div>
-        </div>
-      </div>
 
       <div class="controls">
         {#if t.status === 'idle'}
@@ -1014,42 +1012,42 @@
     transition: width 0.3s ease, background 0.3s ease;
   }
 
-  /* XP + hunger meters — the two gamification bars under the session bar. */
-  .meters { display: flex; flex-direction: column; gap: 8px; }
-  .meter { display: flex; flex-direction: column; gap: 4px; }
-  .meter-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-  .meter-name { font-size: 11px; font-weight: 800; letter-spacing: 0.03em; color: var(--ink-soft); text-transform: uppercase; }
-  .meter-note { font-size: 11px; color: var(--ink-soft); }
-  .meter-note.warn { color: #e05a4d; font-weight: 700; }
-  .fill.hunger { background: #5bb85b; } /* green — a well-fed pet */
-  .fill.hunger.low { background: #e05a4d; } /* red — hungry / starving */
 
   /* The pixel-art XP bar that sits on the grass inside the habitat. Everything
      here fights the soft/rounded look on purpose: hard corners, a thick dark
      outline like a sprite, a chunky offset shadow, and notches cut into the fill
      so it reads as blocky "cells" instead of a smooth gradient. */
-  .xp-hud {
+  /* The two pet-stat bars, stacked on the grass. Both share ONE pixel style
+     (dark outline, notched fill, chunky offset shadow); only the fill colour
+     differs — gold XP, green hunger — so they read as a matched pair. */
+  .stat-bars {
     position: absolute;
     left: 16px;
     right: 16px;
-    bottom: 14px;
+    bottom: 12px;
     z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .stat-row {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 8px;
   }
-  /* "XP" tag sitting on the scene just left of the bar. White with a dark pixel
-     outline so it stays readable over the grass or sky. */
-  .xp-label {
+  /* Name tag on the scene, left of the bar. White with a dark pixel outline so it
+     stays readable over the grass. Fixed width so both bars start at the same x. */
+  .stat-label {
     flex: none;
+    min-width: 46px;
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.5px;
     color: #fff;
     text-shadow: 1px 1px 0 #2f2416, -1px 1px 0 #2f2416, 1px -1px 0 #2f2416, -1px -1px 0 #2f2416;
   }
-  .xp-bar {
+  .stat-bar {
     position: relative; /* anchor for the caption overlaid inside */
     flex: 1;
     height: 20px;
@@ -1059,9 +1057,9 @@
     box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25); /* chunky, offset like a sticker */
     image-rendering: pixelated;
   }
-  /* The unlock hint, centred inside the bar in white (same pixel outline so it
-     reads over both the gold fill and the dark track behind it). */
-  .xp-cap {
+  /* Caption centred inside the bar, white with the same outline so it reads over
+     both the bright fill and the dark track behind it. */
+  .stat-cap {
     position: absolute;
     inset: 0;
     display: flex;
@@ -1075,23 +1073,31 @@
     white-space: nowrap;
     pointer-events: none;
   }
-  .xp-fill {
+  /* notch lines every 8px carve every fill into pixel "cells" (shared) */
+  .stat-fill {
     height: 100%;
-    background:
-      /* notch lines every 8px carve the fill into pixel "cells" */
-      repeating-linear-gradient(
-        90deg,
-        transparent 0,
-        transparent 6px,
-        rgba(0, 0, 0, 0.22) 6px,
-        rgba(0, 0, 0, 0.22) 8px
-      ),
-      /* gold, with a bright top edge and a darker base for a beveled look */
-      linear-gradient(#ffe27a 0, #f5b301 45%, #cf8b00 100%);
     transition: width 0.3s steps(24); /* advances in chunky jumps, not a smooth glide */
   }
+  /* Gold XP: bright top edge, darker base for a beveled look. */
+  .stat-fill.xp {
+    background-image:
+      repeating-linear-gradient(90deg, transparent 0, transparent 6px, rgba(0, 0, 0, 0.22) 6px, rgba(0, 0, 0, 0.22) 8px),
+      linear-gradient(#ffe27a 0, #f5b301 45%, #cf8b00 100%);
+  }
+  /* Leafy green when the pet is fed — earthy, matches the grass. */
+  .stat-fill.hunger {
+    background-image:
+      repeating-linear-gradient(90deg, transparent 0, transparent 6px, rgba(0, 0, 0, 0.22) 6px, rgba(0, 0, 0, 0.22) 8px),
+      linear-gradient(#c3e88a 0, #7fb43f 45%, #4e7d25 100%);
+  }
+  /* Warm terracotta when hungry/starving — a soft alarm, not a harsh web red. */
+  .stat-fill.hunger.low {
+    background-image:
+      repeating-linear-gradient(90deg, transparent 0, transparent 6px, rgba(0, 0, 0, 0.22) 6px, rgba(0, 0, 0, 0.22) 8px),
+      linear-gradient(#f0a878 0, #d2603c 45%, #a63c1e 100%);
+  }
   @media (prefers-reduced-motion: reduce) {
-    .xp-fill { transition: none; }
+    .stat-fill { transition: none; }
   }
 
   /* Controls */
