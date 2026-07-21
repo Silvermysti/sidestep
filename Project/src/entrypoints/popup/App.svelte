@@ -1092,9 +1092,11 @@
     font-variant-numeric: tabular-nums;
   }
   .mbar-track {
-    height: 5px;
+    height: 11px;
     border-radius: 999px;
     background: var(--surface-2);
+    border: 2px solid #2f2416; /* same chunky outline as the theme dots */
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
     overflow: hidden;
   }
   .mbar-fill {
