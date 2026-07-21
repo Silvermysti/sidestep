@@ -56,9 +56,11 @@ export default defineContentScript({
     const stopAnim = () => { if (anim) { clearInterval(anim); anim = undefined; } };
 
     function render() {
-      const focus = state.mode === 'focus';
-      const running = focus && state.status === 'running';
-      const active = focus && (state.status === 'running' || state.status === 'paused');
+      // Show the pet whenever a session is on — focus OR break — so it keeps you
+      // company through the whole cycle, not only while focusing. It runs when the
+      // timer is ticking and sits when paused.
+      const running = state.status === 'running';
+      const active = state.status === 'running' || state.status === 'paused';
       if (!active) { host.style.display = 'none'; stopAnim(); return; }
       host.style.display = 'block';
       if (running) {
