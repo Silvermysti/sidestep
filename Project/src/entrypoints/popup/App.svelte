@@ -126,15 +126,14 @@
   let sprite = $derived(COMPANIONS[companion]);
 
   // --- Scene themes ---
-  // Each theme reskins the habitat: a background image (or gradient) and a
-  // scrolling grass strip. `tile` is that strip's exact pixel width, fed to the
-  // grass so the loop lines up; `dot` is the colour of its picker circle. Snow
-  // ships without a background scene, so it uses a soft icy gradient sky.
+  // Each theme reskins the habitat: a background image and a scrolling grass
+  // strip. `tile` is that strip's exact pixel width, fed to the grass so the loop
+  // lines up; `dot` is the colour of its picker circle.
   const THEMES = {
     meadow: { label: 'Meadow', bg: 'url(/scene/background.png)', grass: '/scene/grass.png', tile: 1571, dot: '#7fb43f' },
     autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 1462, dot: '#d5852f' },
     rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1088, dot: '#6d88a8' },
-    snow: { label: 'Snow', bg: 'linear-gradient(#d3e4f0 0%, #e7f1f8 55%, #f4fafd 100%)', grass: '/scene/snow-grass.png', tile: 1660, dot: '#cfe6f5' },
+    snow: { label: 'Snow', bg: 'url(/scene/snow-bg.png)', grass: '/scene/snow-grass.png', tile: 1660, dot: '#cfe6f5' },
   };
   const THEME_KEYS = Object.keys(THEMES);
   let theme = $derived(s?.theme && THEMES[s.theme] ? s.theme : 'meadow');
