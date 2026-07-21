@@ -73,6 +73,17 @@ export default defineBackground(() => {
   browser.alarms.create(TICK_ALARM, { periodInMinutes: 1 });
   wake();
 
+  // A fresh browser launch — Chrome was fully quit (user closed it, or the laptop
+  // shut down) and has just reopened. This fires ONLY on a real relaunch, never on
+  // an OS sleep/resume that left Chrome running, and never when the service worker
+  // merely wakes for an event. So it is exactly the "the browser was closed" case,
+  // where we RESET a leftover session instead of pausing it (sleep still pauses,
+  // handled by beat()). A dev "reload extension" does NOT fire this, so testing
+  // reloads won't wipe the timer.
+  browser.runtime.onStartup.addListener(() => {
+    resetOnBrowserRestart();
+  });
+
   // Commands coming from the popup.
   browser.runtime.onMessage.addListener((message) => {
     return handleCommand(message);
@@ -119,7 +130,8 @@ async function healSettings() {
     stored.breakMinutes == null ||
     stored.cycles == null ||
     stored.linkOrder == null ||
-    stored.companion == null;
+    stored.companion == null ||
+    stored.showOnPage == null;
   if (!needsFix) return;
   await settings.setValue({
     ...SETTINGS_DEFAULTS,
@@ -322,6 +334,21 @@ async function syncAlarm(t: any) {
   if (t.status === 'running' && t.endsAt) {
     browser.alarms.create(TIMER_ALARM, { when: t.endsAt });
   }
+}
+
+// Browser was closed and reopened (or the machine was shut down and rebooted).
+// Any session that was still running or paused is thrown away — the user comes
+// back to a clean, fresh timer rather than a stale one from a past sitting. We
+// also stamp the heartbeat to NOW so the sleep guard in beat() doesn't then read
+// this launch as an away-gap and try to pause the (already reset) timer. Contrast
+// with sleep, where Chrome stays alive, this never fires, and beat() pauses.
+async function resetOnBrowserRestart() {
+  await heartbeat.setValue(Date.now());
+  const [t, s]: any = await Promise.all([timer.getValue(), settings.getValue()]);
+  if (t.status === 'idle') return; // nothing to clear
+  const fresh = resetState(t, s);
+  await timer.setValue(fresh);
+  await syncAlarm(fresh);
 }
 
 // A single wake-up. First the sleep guard (which may pause a session left through
