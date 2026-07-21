@@ -133,7 +133,6 @@
     meadow: { label: 'Meadow', bg: 'url(/scene/background.png)', grass: '/scene/grass.png', tile: 1571, dot: '#7fb43f' },
     autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 2172, dot: '#d5852f' },
     rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1802, dot: '#6d88a8' },
-    snow: { label: 'Snow', bg: 'url(/scene/snow-bg.png)', grass: '/scene/snow-grass.png', tile: 1724, dot: '#cfe6f5' },
   };
   const THEME_KEYS = Object.keys(THEMES);
   let theme = $derived(s?.theme && THEMES[s.theme] ? s.theme : 'meadow');
@@ -862,8 +861,7 @@
     aspect-ratio: 4 / 5;
     border-radius: var(--r-lg);
     border: 1px solid var(--line);
-    /* Scene backdrop — swapped per theme via --habitat-bg (an image url or, for
-       snow, a gradient). Falls back to the meadow. */
+    /* Scene backdrop — swapped per theme via --habitat-bg. Falls back to meadow. */
     background: var(--habitat-bg, url(/scene/background.png)) center / cover no-repeat;
     box-shadow: var(--shadow);
     overflow: hidden;

@@ -22,7 +22,7 @@ export const SETTINGS_DEFAULTS = {
   linkOrder: 'sequential', // 'sequential' (to-do style) | 'random'
   companion: 'bunny', // which pet keeps you company — see lib/companions.js
   showOnPage: true, // draw the floating companion on web pages during a session
-  theme: 'meadow', // scene skin: 'meadow' | 'autumn' | 'rainy' | 'snow'
+  theme: 'meadow', // scene skin: 'meadow' | 'autumn' | 'rainy'
 };
 
 // User configuration. (Stage 1 only really uses focus/break minutes; the rest
