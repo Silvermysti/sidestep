@@ -61,6 +61,20 @@ export const COMPANIONS = {
     grassSpeed: 0.95, // cat strolls a touch slower — grass scrolls 5% slower
     unlockAt: 180, // ~3 hours of focus
   },
+  pikachu: {
+    label: 'Pikachu',
+    run: [
+      '/pikachu/Running1.png', '/pikachu/Running2.png',
+      '/pikachu/Running3.png', '/pikachu/Running4.png',
+    ],
+    sit: '/pikachu/Sitting.png',
+    sleep: '/pikachu/Sleeping.png', // naps on a pile of peaches
+    icon: '/pikachu/Icon.png',
+    frameMs: 119,
+    width: 235,
+    sleepW: 250,
+    unlockAt: 300, // ~5 hours of focus — the top-tier reward
+  },
 };
 
 // The order the picker shows them in, and the default for a fresh install / any
