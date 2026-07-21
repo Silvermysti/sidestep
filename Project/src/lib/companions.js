@@ -71,8 +71,8 @@ export const COMPANIONS = {
     sleep: '/pikachu/Sleeping.png', // naps on a pile of peaches
     icon: '/pikachu/Icon.png',
     frameMs: 119,
-    width: 235,
-    sleepW: 250,
+    width: 180, // kept small on purpose — the source art is low-res, so a smaller
+    sleepW: 205, // draw reads as crisp pixel-art instead of blurry
     unlockAt: 300, // ~5 hours of focus — the top-tier reward
   },
 };
