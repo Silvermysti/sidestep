@@ -132,7 +132,7 @@
   const THEMES = {
     meadow: { label: 'Meadow', bg: 'url(/scene/background.png)', grass: '/scene/grass.png', tile: 1571, dot: '#7fb43f' },
     autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 2172, dot: '#d5852f' },
-    rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1802, dot: '#6d88a8' },
+    rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1802, dot: '#6d88a8', zoom: '150%' },
   };
   const THEME_KEYS = Object.keys(THEMES);
   let theme = $derived(s?.theme && THEMES[s.theme] ? s.theme : 'meadow');
@@ -440,7 +440,7 @@
 
       <!-- The bunny's home. It hops through the run cycle while you're focusing
            and sits still when idle/paused/on a break. -->
-      <div class="habitat" style="--habitat-bg: {scene.bg}; --grass-img: url({scene.grass}); --grass-tile: {scene.tile}px">
+      <div class="habitat" style="--habitat-bg: {scene.bg}; --habitat-size: {scene.zoom ?? 'cover'}; --grass-img: url({scene.grass}); --grass-tile: {scene.tile}px">
         <div class="hud">
           <div class="time">{formatMs(remaining)}</div>
           <div class="status">
@@ -861,8 +861,9 @@
     aspect-ratio: 4 / 5;
     border-radius: var(--r-lg);
     border: 1px solid var(--line);
-    /* Scene backdrop — swapped per theme via --habitat-bg. Falls back to meadow. */
-    background: var(--habitat-bg, url(/scene/background.png)) center / cover no-repeat;
+    /* Scene backdrop — swapped per theme via --habitat-bg; --habitat-size lets a
+       theme zoom in past cover (rainy). Falls back to the meadow at cover. */
+    background: var(--habitat-bg, url(/scene/background.png)) center / var(--habitat-size, cover) no-repeat;
     box-shadow: var(--shadow);
     overflow: hidden;
     transition: background 0.3s ease;
