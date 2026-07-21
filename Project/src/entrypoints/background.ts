@@ -131,7 +131,8 @@ async function healSettings() {
     stored.cycles == null ||
     stored.linkOrder == null ||
     stored.companion == null ||
-    stored.showOnPage == null;
+    stored.showOnPage == null ||
+    stored.theme == null;
   if (!needsFix) return;
   await settings.setValue({
     ...SETTINGS_DEFAULTS,

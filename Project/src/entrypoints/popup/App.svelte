@@ -125,6 +125,25 @@
   let companion = $derived(s?.companion ?? DEFAULT_COMPANION);
   let sprite = $derived(COMPANIONS[companion]);
 
+  // --- Scene themes ---
+  // Each theme reskins the habitat: a background image (or gradient) and a
+  // scrolling grass strip. `tile` is that strip's exact pixel width, fed to the
+  // grass so the loop lines up; `dot` is the colour of its picker circle. Snow
+  // ships without a background scene, so it uses a soft icy gradient sky.
+  const THEMES = {
+    meadow: { label: 'Meadow', bg: 'url(/scene/background.png)', grass: '/scene/grass.png', tile: 1571, dot: '#7fb43f' },
+    autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 1462, dot: '#d5852f' },
+    rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1088, dot: '#6d88a8' },
+    snow: { label: 'Snow', bg: 'linear-gradient(#d3e4f0 0%, #e7f1f8 55%, #f4fafd 100%)', grass: '/scene/snow-grass.png', tile: 1660, dot: '#cfe6f5' },
+  };
+  const THEME_KEYS = Object.keys(THEMES);
+  let theme = $derived(s?.theme && THEMES[s.theme] ? s.theme : 'meadow');
+  let scene = $derived(THEMES[theme]);
+  function pickTheme(key) {
+    if (key === theme) return;
+    saveSettings({ theme: key });
+  }
+
   // --- XP + hunger meters ---
   // XP is measured in focus minutes; hunger is a 0..100 pet-care meter. Both are
   // owned by the background (lib/storage `progress`) — here we only display them.
@@ -382,6 +401,21 @@
         <path d="M13.2 12.2c0-3.4 2.8-6.2 6.2-6.2.6 0 1 .5 1 1 0 3.4-2.8 6.2-6.2 6.2-.6 0-1-.5-1-1Z"/>
       </svg>
       <span class="brand">Sidestep</span>
+
+      <!-- Scene theme picker: one pixel-token circle per season, top-right. -->
+      <div class="themes">
+        {#each THEME_KEYS as key}
+          <button
+            class="theme-dot"
+            class:selected={theme === key}
+            style="--dot: {THEMES[key].dot}"
+            onclick={() => pickTheme(key)}
+            title="{THEMES[key].label} theme"
+            aria-label="{THEMES[key].label} theme"
+            aria-pressed={theme === key}
+          ></button>
+        {/each}
+      </div>
     </div>
 
     <nav class="tabs" role="tablist">
@@ -408,7 +442,7 @@
 
       <!-- The bunny's home. It hops through the run cycle while you're focusing
            and sits still when idle/paused/on a break. -->
-      <div class="habitat">
+      <div class="habitat" style="--habitat-bg: {scene.bg}; --grass-img: url({scene.grass}); --grass-tile: {scene.tile}px">
         <div class="hud">
           <div class="time">{formatMs(remaining)}</div>
           <div class="status">
@@ -750,6 +784,26 @@
     color: var(--ink);
   }
 
+  /* Scene theme picker — pixel-token circles pinned to the right of the brand. */
+  .themes { display: flex; align-items: center; gap: 6px; margin-left: auto; padding-right: 2px; }
+  .theme-dot {
+    width: 17px;
+    height: 17px;
+    padding: 0;
+    border: 2px solid #2f2416; /* chunky pixel-art outline */
+    border-radius: 50%;
+    background: var(--dot);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22); /* small offset, like a sticker */
+    image-rendering: pixelated;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+  }
+  .theme-dot:hover { transform: translateY(-1px); }
+  .theme-dot.selected {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
   .tabs {
     display: flex;
     gap: 3px;
@@ -812,7 +866,9 @@
     aspect-ratio: 4 / 5;
     border-radius: var(--r-lg);
     border: 1px solid var(--line);
-    background: url(/scene/background.png) center / cover no-repeat;
+    /* Scene backdrop — swapped per theme via --habitat-bg (an image url or, for
+       snow, a gradient). Falls back to the meadow. */
+    background: var(--habitat-bg, url(/scene/background.png)) center / cover no-repeat;
     box-shadow: var(--shadow);
     overflow: hidden;
     transition: background 0.3s ease;
@@ -868,12 +924,13 @@
     right: 0;
     bottom: -3%;
     height: 55%;
-    background-image: url(/scene/grass.png);
+    /* Grass image + its exact tile width both come from the active theme
+       (--grass-img / --grass-tile), set inline on .habitat. Each strip's ends are
+       cross-faded over a plain-grass patch so the scroll seam is invisible, and
+       the scroll distance below matches --grass-tile so the loop lines up. */
+    background-image: var(--grass-img, url(/scene/grass.png));
     background-repeat: repeat-x;
-    /* Fixed tile width (the strip is 1571px wide) so the scroll loops exactly.
-       The strip's two ends are cross-faded over a plain-grass patch so the loop
-       seam is invisible as it scrolls. */
-    background-size: 1571px 100%;
+    background-size: var(--grass-tile, 1571px) 100%;
     background-position: left top;
   }
   /* While the companion runs it faces left and stays put, so scroll the meadow
@@ -893,7 +950,7 @@
   }
   @keyframes grass-scroll {
     from { background-position: 0 top; }
-    to   { background-position: 1571px top; }
+    to   { background-position: var(--grass-tile, 1571px) top; }
   }
   @media (prefers-reduced-motion: reduce) {
     .ground.active { animation: none; }
