@@ -131,7 +131,7 @@
   // lines up; `dot` is the colour of its picker circle.
   const THEMES = {
     meadow: { label: 'Meadow', bg: 'url(/scene/background.png)', grass: '/scene/grass.png', tile: 1571, dot: '#7fb43f' },
-    autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 1459, dot: '#d5852f', pos: 'center 100%', zoom: '115%' },
+    autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 1459, dot: '#d5852f', pos: 'center 100%', zoom: '125%' },
     rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1743, dot: '#6d88a8', zoom: '130%' },
   };
   const THEME_KEYS = Object.keys(THEMES);
