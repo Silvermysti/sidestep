@@ -431,8 +431,11 @@
              edges, dark outline, notched fill) to match the sprite art rather than
              the soft rounded UI below. -->
         <div class="xp-hud">
-          <div class="xp-cap">{xpCaption}</div>
-          <div class="xp-bar"><div class="xp-fill" style="width: {xpFill * 100}%"></div></div>
+          <span class="xp-label">XP</span>
+          <div class="xp-bar">
+            <div class="xp-fill" style="width: {xpFill * 100}%"></div>
+            <span class="xp-cap">{xpCaption}</span>
+          </div>
         </div>
       </div>
 
@@ -1020,29 +1023,45 @@
     bottom: 14px;
     z-index: 2;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
   }
-  .xp-cap {
-    font-size: 10px;
+  /* "XP" tag sitting on the scene just left of the bar. White with a dark pixel
+     outline so it stays readable over the grass or sky. */
+  .xp-label {
+    flex: none;
+    font-size: 12px;
     font-weight: 800;
-    letter-spacing: 0.3px;
-    color: #4a2f12;
-    background: color-mix(in srgb, #ffe08a 82%, transparent);
-    border: 2px solid #2f2416;
-    padding: 1px 7px;
-    image-rendering: pixelated;
-    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
+    letter-spacing: 0.5px;
+    color: #fff;
+    text-shadow: 1px 1px 0 #2f2416, -1px 1px 0 #2f2416, 1px -1px 0 #2f2416, -1px -1px 0 #2f2416;
   }
   .xp-bar {
-    width: 100%;
-    height: 15px;
+    position: relative; /* anchor for the caption overlaid inside */
+    flex: 1;
+    height: 20px;
     padding: 2px;
     background: #6b4a2b; /* dark earthy track under the fill */
     border: 3px solid #2f2416; /* the sprite-style outline */
     box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25); /* chunky, offset like a sticker */
     image-rendering: pixelated;
+  }
+  /* The unlock hint, centred inside the bar in white (same pixel outline so it
+     reads over both the gold fill and the dark track behind it). */
+  .xp-cap {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    color: #fff;
+    text-shadow: 1px 1px 0 #2f2416, -1px 1px 0 #2f2416, 1px -1px 0 #2f2416, -1px -1px 0 #2f2416;
+    white-space: nowrap;
+    pointer-events: none;
   }
   .xp-fill {
     height: 100%;
