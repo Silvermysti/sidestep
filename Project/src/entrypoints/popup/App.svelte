@@ -1,10 +1,10 @@
 <script>
   import { onMount, tick } from 'svelte';
   import { browser } from '#imports';
-  import { settings, timer, lists, allowances, parkingLot } from '@/lib/storage';
+  import { settings, timer, lists, allowances, parkingLot, progress as progressStore } from '@/lib/storage';
   import { parkThought } from '@/lib/parking';
   import { durationMs, formatMs, totalCycles } from '@/lib/timer';
-  import { COMPANIONS, COMPANION_KEYS, DEFAULT_COMPANION } from '@/lib/companions';
+  import { COMPANIONS, COMPANION_KEYS, DEFAULT_COMPANION, isUnlocked } from '@/lib/companions';
   import { hostnameOf, linkTitle, linkUrl, normalizeUrl, siteBuckets, siteKeyOf, siteLabel, siteToBlock } from '@/lib/sites';
 
   // Which top tab is showing. The popup is now split into pages instead of one
@@ -16,6 +16,7 @@
   let s = $state(null);
   let l = $state(null);
   let al = $state(null); // active freedom windows: { site: expiry }
+  let prog = $state(null); // gamification: { xp, hunger } — drives the two meters
   let pl = $state([]); // parked thoughts: [{ text, savedAt, done }]
   let parkDraft = $state(''); // the "jot a thought" box on the Focus tab
   let adding = $state(false); // is that box open? kept shut so the list stays easy to read
@@ -39,6 +40,7 @@
       s = await settings.getValue();
       l = await lists.getValue();
       al = await allowances.getValue();
+      prog = await progressStore.getValue();
       pl = await parkingLot.getValue();
     })();
 
@@ -52,6 +54,7 @@
     const unwatchS = settings.watch((v) => (s = v));
     const unwatchL = lists.watch((v) => (l = v));
     const unwatchA = allowances.watch((v) => (al = v));
+    const unwatchProg = progressStore.watch((v) => (prog = v));
     const unwatchP = parkingLot.watch((v) => (pl = v));
     const ticker = setInterval(() => (now = Date.now()), 250);
 
@@ -60,6 +63,7 @@
       unwatchS();
       unwatchL();
       unwatchA();
+      unwatchProg();
       unwatchP();
       clearInterval(ticker);
     };
@@ -120,6 +124,25 @@
   // the choice.
   let companion = $derived(s?.companion ?? DEFAULT_COMPANION);
   let sprite = $derived(COMPANIONS[companion]);
+
+  // --- XP + hunger meters ---
+  // XP is measured in focus minutes; hunger is a 0..100 pet-care meter. Both are
+  // owned by the background (lib/storage `progress`) — here we only display them.
+  let xp = $derived(prog?.xp ?? 0);
+  let hunger = $derived(Math.max(0, Math.min(100, prog?.hunger ?? 100)));
+  // The next pet still locked at this XP (companions are listed in ascending
+  // unlock order), and the XP already banked toward it, so the XP bar fills from
+  // one milestone to the next rather than from zero every time.
+  let nextLock = $derived(COMPANION_KEYS.map((k) => COMPANIONS[k]).find((c) => xp < c.unlockAt) ?? null);
+  let prevUnlock = $derived(
+    COMPANION_KEYS.map((k) => COMPANIONS[k].unlockAt).filter((u) => u <= xp).reduce((a, b) => Math.max(a, b), 0)
+  );
+  let xpFill = $derived(nextLock ? Math.min(1, (xp - prevUnlock) / (nextLock.unlockAt - prevUnlock)) : 1);
+  let xpCaption = $derived(
+    nextLock ? `${nextLock.label} unlocks in ${Math.max(0, Math.ceil(nextLock.unlockAt - xp))} min` : 'All animals unlocked'
+  );
+  let hungerLabel = $derived(hunger <= 0 ? 'Starving!' : hunger < 25 ? 'Hungry' : '');
+  let hungerLow = $derived(hunger < 25);
 
   // Grass scroll duration. The CSS baseline is one tile per 9.2s; a companion can
   // scale that with `grassSpeed` (1 = normal, <1 = slower). We feed the result in
@@ -324,6 +347,7 @@
   // the block page both follow it. Changing it takes effect right away.
   async function pickCompanion(key) {
     if (key === companion) return;
+    if (!isUnlocked(key, xp)) return; // still locked — earn the XP first
     await saveSettings({ companion: key });
   }
 
@@ -405,6 +429,25 @@
       </div>
 
       <div class="bar"><div class="fill" style="width: {progress * 100}%"></div></div>
+
+      <!-- XP grows with every focused minute and unlocks animals; hunger falls
+           while you're away and, once empty, starves the pet so its XP drains. -->
+      <div class="meters">
+        <div class="meter">
+          <div class="meter-top">
+            <span class="meter-name">XP</span>
+            <span class="meter-note">{xpCaption}</span>
+          </div>
+          <div class="bar"><div class="fill xp" style="width: {xpFill * 100}%"></div></div>
+        </div>
+        <div class="meter">
+          <div class="meter-top">
+            <span class="meter-name">Hunger</span>
+            {#if hungerLabel}<span class="meter-note warn">{hungerLabel}</span>{/if}
+          </div>
+          <div class="bar"><div class="fill hunger" class:low={hungerLow} style="width: {hunger}%"></div></div>
+        </div>
+      </div>
 
       <div class="controls">
         {#if t.status === 'idle'}
@@ -646,15 +689,20 @@
             <button
               class="pet"
               class:selected={companion === key}
+              class:locked={!isUnlocked(key, xp)}
+              disabled={!isUnlocked(key, xp)}
               onclick={() => pickCompanion(key)}
               aria-pressed={companion === key}
             >
               <img src={COMPANIONS[key].icon} alt="" draggable="false" />
               <span>{COMPANIONS[key].label}</span>
+              {#if !isUnlocked(key, xp)}
+                <span class="lock">🔒 {COMPANIONS[key].unlockAt} XP</span>
+              {/if}
             </button>
           {/each}
         </div>
-        <p class="hint">Your focus buddy runs alongside you here, and naps on the block page when you step past a distraction.</p>
+        <p class="hint">Your focus buddy runs alongside you here, and naps on the block page when you step past a distraction. Earn XP by focusing to unlock more; keep them fed or a hungry pet loses its XP.</p>
       </section>
     {/if}
   {:else}
@@ -950,6 +998,17 @@
     transition: width 0.3s ease, background 0.3s ease;
   }
 
+  /* XP + hunger meters — the two gamification bars under the session bar. */
+  .meters { display: flex; flex-direction: column; gap: 8px; }
+  .meter { display: flex; flex-direction: column; gap: 4px; }
+  .meter-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .meter-name { font-size: 11px; font-weight: 800; letter-spacing: 0.03em; color: var(--ink-soft); text-transform: uppercase; }
+  .meter-note { font-size: 11px; color: var(--ink-soft); }
+  .meter-note.warn { color: #e05a4d; font-weight: 700; }
+  .fill.xp { background: #f5b301; } /* gold — earned experience */
+  .fill.hunger { background: #5bb85b; } /* green — a well-fed pet */
+  .fill.hunger.low { background: #e05a4d; } /* red — hungry / starving */
+
   /* Controls */
   .controls { display: flex; gap: 9px; }
   .controls button {
@@ -1138,6 +1197,11 @@
     border-color: var(--accent);
     background: var(--accent-tint);
   }
+  /* A pet you haven't earned yet: dimmed, not clickable, with its XP price shown. */
+  .pet.locked { cursor: not-allowed; opacity: 0.55; filter: grayscale(0.9); }
+  .pet.locked:hover { border-color: var(--line); }
+  .pet.locked:active { transform: none; }
+  .pet .lock { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); }
   .pet img {
     width: 56px;
     height: 56px;

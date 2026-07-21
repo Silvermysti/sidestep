@@ -55,6 +55,18 @@ export const heartbeat = storage.defineItem('local:heartbeat', {
   fallback: null,
 });
 
+// The gamification progress — two numbers that drive the XP and hunger bars.
+//   xp     : lifetime focus progress. Earned per focused minute; drops when the
+//            pet starves. A companion is UNLOCKED when xp >= its unlockAt (see
+//            companions.js), so unlocking/re-locking is derived, never stored.
+//   hunger : a real-time pet-care meter, 0..100. Focusing feeds it; time away
+//            empties it; an empty bowl drains xp. Starts full on a fresh install.
+// Updated once per awake minute by the background (see applyProgress in
+// background.ts); sleep time is frozen out so you're not punished for sleeping.
+export const progress = storage.defineItem('local:progress', {
+  fallback: { xp: 0, hunger: 100 },
+});
+
 // Where the floating on-page companion (the content-script widget) was last
 // dragged, as viewport pixels from the top-left. Null until first placed, which
 // means "use the default bottom-right corner". Shared across tabs so the pet stays

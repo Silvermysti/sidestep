@@ -14,6 +14,9 @@
 //   sleepW  — how wide to draw the sleeping pose on the block page (px)
 //   grassSpeed — how fast the grass scrolls under this pet, relative to normal
 //                (1 = normal, 0.95 = 5% slower). Optional; defaults to 1.
+//   unlockAt — how much XP (= focused minutes) you need before this pet is
+//              available. Bunny is 0 (free from the start and can never be lost);
+//              fox and cat are earned, and re-lock if XP drains back below these.
 export const COMPANIONS = {
   bunny: {
     label: 'Bunny',
@@ -27,6 +30,7 @@ export const COMPANIONS = {
     frameMs: 119,
     width: 190,
     sleepW: 236,
+    unlockAt: 0, // free base — always available, never re-locks
   },
   fox: {
     label: 'Fox',
@@ -40,6 +44,7 @@ export const COMPANIONS = {
     frameMs: 119,
     width: 260,
     sleepW: 268,
+    unlockAt: 60, // ~1 hour of focus
   },
   cat: {
     label: 'Cat',
@@ -54,6 +59,7 @@ export const COMPANIONS = {
     width: 270,
     sleepW: 250,
     grassSpeed: 0.95, // cat strolls a touch slower — grass scrolls 5% slower
+    unlockAt: 180, // ~3 hours of focus
   },
 };
 
@@ -61,3 +67,14 @@ export const COMPANIONS = {
 // saved settings that predate the companion choice.
 export const COMPANION_KEYS = Object.keys(COMPANIONS);
 export const DEFAULT_COMPANION = 'bunny';
+
+// The unlock rule, in one place so the popup (which greys out locked pets) and the
+// background (which unlocks/re-locks as XP moves) always agree.
+//   isUnlocked  — is this pet available at the given XP?
+//   unlockedKeys — every available pet, in picker order (bunny is always present).
+export function isUnlocked(key, xp) {
+  return (xp ?? 0) >= (COMPANIONS[key]?.unlockAt ?? 0);
+}
+export function unlockedKeys(xp) {
+  return COMPANION_KEYS.filter((k) => isUnlocked(k, xp));
+}

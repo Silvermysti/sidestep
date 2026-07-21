@@ -6,7 +6,8 @@
 // if it has gone to sleep in the meantime (service workers sleep to save memory,
 // which is why a normal setInterval countdown would NOT survive here).
 
-import { allowances, heartbeat, lists, settings, SETTINGS_DEFAULTS, timer } from '@/lib/storage';
+import { allowances, heartbeat, lists, progress, settings, SETTINGS_DEFAULTS, timer } from '@/lib/storage';
+import { COMPANIONS, DEFAULT_COMPANION, unlockedKeys } from '@/lib/companions';
 import {
   activeAllowance,
   buildAllowedKeys,
@@ -43,6 +44,16 @@ const FREEDOM_PREFIX = 'sidestep-freedom:';
 // means nothing of ours ran for a while — the laptop slept or Chrome was closed.
 // Anything past this counts as "we were away", and a running session is paused.
 const WAKE_GAP_MS = 2 * 60 * 1000;
+
+// --- pet-care tuning (the XP + hunger gamification). All rates are per awake
+// minute; the once-a-minute tick applies them with the real elapsed awake time.
+// These are first guesses — expect to tune the decay and the unlock thresholds
+// (in companions.js) once the pacing has been felt in real use.
+const HUNGER_MAX = 100;
+const XP_PER_MIN = 1; // a focused minute earns 1 XP (XP is measured in focus minutes)
+const HUNGER_FEED_PER_MIN = 4; // focusing refills a full bowl in ~25 min
+const HUNGER_DECAY_PER_MIN = 100 / 360; // idle empties the bowl over ~6 awake hours
+const XP_DRAIN_PER_MIN = 2; // a starving (empty-bowl) pet bleeds XP at 2/min
 
 export default defineBackground(() => {
   // Settings saved by an older version may be missing keys added later (the
@@ -336,7 +347,14 @@ async function beat() {
   const last = await heartbeat.getValue();
   await heartbeat.setValue(now);
   if (last == null) return; // first ever beat — no baseline to judge against
-  if (now - last <= WAKE_GAP_MS) return; // a normal, awake tick
+
+  const gap = now - last;
+  const slept = gap > WAKE_GAP_MS;
+
+  // XP and hunger only move during time we were actually awake. A slept-through
+  // gap is frozen out (elapsed 0), so sleeping is never counted as neglect — the
+  // same principle the timer pause below uses.
+  if (!slept) return void (await applyProgress(gap));
 
   const t: any = await timer.getValue();
   if (t.status !== 'running') return; // idle or already paused: nothing to protect
@@ -345,6 +363,61 @@ async function beat() {
   await timer.setValue(paused);
   await syncAlarm(paused);
   notifyAway();
+}
+
+// The pet-care loop, run once per awake minute with the real awake time since the
+// last beat. Focusing feeds hunger and earns XP; time away empties hunger; an
+// empty bowl (starving) drains XP. Which animals are unlocked is derived straight
+// from XP (companions.js), so a drain past a threshold quietly re-locks a pet.
+async function applyProgress(elapsedMs: number) {
+  if (elapsedMs <= 0) return;
+  const mins = elapsedMs / 60000;
+
+  const [p, t, s]: any = await Promise.all([
+    progress.getValue(),
+    timer.getValue(),
+    settings.getValue(),
+  ]);
+  const focusing = t.status === 'running' && t.mode === 'focus';
+
+  let hunger = p?.hunger ?? HUNGER_MAX;
+  let xp = p?.xp ?? 0;
+  const before = unlockedKeys(xp);
+
+  if (focusing) {
+    hunger = Math.min(HUNGER_MAX, hunger + HUNGER_FEED_PER_MIN * mins);
+    xp = xp + XP_PER_MIN * mins;
+  } else {
+    hunger = Math.max(0, hunger - HUNGER_DECAY_PER_MIN * mins);
+    if (hunger <= 0) xp = Math.max(0, xp - XP_DRAIN_PER_MIN * mins); // starving
+  }
+
+  await progress.setValue({ xp, hunger });
+
+  // Announce anything that just joined or left the collection.
+  const after = unlockedKeys(xp);
+  for (const key of after) if (!before.includes(key)) notifyUnlock(key, true);
+  for (const key of before) if (!after.includes(key)) notifyUnlock(key, false);
+
+  // Never leave the user pointing at a pet they can no longer use — fall back to
+  // the highest still-unlocked one (bunny at worst, which is always present).
+  if (!after.includes(s.companion)) {
+    const fallback = after[after.length - 1] ?? DEFAULT_COMPANION;
+    if (fallback !== s.companion) await settings.setValue({ ...s, companion: fallback });
+  }
+}
+
+// A little fanfare (or condolence) when the collection changes.
+function notifyUnlock(key: string, gained: boolean) {
+  const label = (COMPANIONS as any)[key]?.label ?? key;
+  browser.notifications.create({
+    type: 'basic',
+    iconUrl: browser.runtime.getURL('/icon/128.png'),
+    title: gained ? `${label} unlocked!` : `${label} wandered off`,
+    message: gained
+      ? `You focused enough to earn the ${label}. Choose it in Settings.`
+      : `Your ${label} got too hungry and left. Focus to win it back.`,
+  });
 }
 
 // Tell the user why their timer stopped, so a paused session on wake reads as
