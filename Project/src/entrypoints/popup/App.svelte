@@ -1288,9 +1288,9 @@
   .hint.no-top { margin: -3px 0 0; line-height: 1.45; }
 
   /* Companion picker — one tappable tile per animal, its sit pose as the icon. */
-  .pets { display: flex; gap: 10px; }
+  /* Three tiles per row; a 4th (and beyond) wraps to the next row, left-aligned. */
+  .pets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .pet {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
