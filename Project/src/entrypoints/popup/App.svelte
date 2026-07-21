@@ -688,6 +688,18 @@
         <div class="card-head card-sub">
           <span class="card-label">Companion</span>
         </div>
+        <label class="setting toggle-row">
+          <span class="setting-name">
+            Companion on web pages
+            <small class="setting-note">show the buddy on the page you're reading</small>
+          </span>
+          <input
+            class="toggle"
+            type="checkbox"
+            checked={s.showOnPage ?? true}
+            onchange={(e) => saveSettings({ showOnPage: e.currentTarget.checked })}
+          />
+        </label>
         <div class="pets">
           {#each COMPANION_KEYS as key}
             <button
@@ -1240,6 +1252,26 @@
   }
   .stepper button:hover:not(:disabled) { filter: brightness(0.97); }
   .stepper button:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
+
+  /* On/off switch for "Companion on web pages". A checkbox styled as a sliding
+     pill: track goes sage-green when on, grey when off, with a knob that slides. */
+  .toggle-row { cursor: pointer; }
+  .toggle {
+    appearance: none; -webkit-appearance: none; margin: 0; flex: none;
+    position: relative; width: 42px; height: 24px; border-radius: 999px;
+    background: #cfcabb; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+    cursor: pointer; transition: background 0.15s ease;
+  }
+  .toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition: transform 0.15s ease;
+  }
+  .toggle:checked { background: var(--accent, #7a9b6e); }
+  .toggle:checked::after { transform: translateX(18px); }
+  @media (prefers-reduced-motion: reduce) {
+    .toggle, .toggle::after { transition: none; }
+  }
   .num {
     min-width: 58px;
     text-align: center;

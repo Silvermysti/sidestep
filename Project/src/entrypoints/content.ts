@@ -51,6 +51,7 @@ export default defineContentScript({
 
     // --- state + animation ---
     let state = { status: 'idle', mode: 'focus' };
+    let showOnPage = true; // the "Companion on web pages" setting — hides the pet when off
     let frame = 0;
     let anim: ReturnType<typeof setInterval> | undefined;
     const stopAnim = () => { if (anim) { clearInterval(anim); anim = undefined; } };
@@ -60,7 +61,7 @@ export default defineContentScript({
       // company through the whole cycle, not only while focusing. It runs when the
       // timer is ticking and sits when paused.
       const running = state.status === 'running';
-      const active = state.status === 'running' || state.status === 'paused';
+      const active = showOnPage && (state.status === 'running' || state.status === 'paused');
       if (!active) { host.style.display = 'none'; stopAnim(); return; }
       host.style.display = 'block';
       if (running) {
@@ -120,6 +121,7 @@ export default defineContentScript({
     // --- wire everything to storage ---
     (async () => {
       const [s, t, pos] = await Promise.all([settings.getValue(), timer.getValue(), overlay.getValue()]);
+      showOnPage = s?.showOnPage ?? true;
       loadSprite(s?.companion ?? DEFAULT_COMPANION);
       const p = pos && pos.x != null ? pos : defaultPos();
       place(p.x, p.y);
@@ -127,7 +129,7 @@ export default defineContentScript({
       render();
     })();
 
-    settings.watch((s) => { loadSprite(s?.companion ?? DEFAULT_COMPANION); render(); });
+    settings.watch((s) => { showOnPage = s?.showOnPage ?? true; loadSprite(s?.companion ?? DEFAULT_COMPANION); render(); });
     timer.watch((t) => { state = { status: t?.status ?? 'idle', mode: t?.mode ?? 'focus' }; render(); });
     overlay.watch((pos) => { if (pos && pos.x != null && !dragging) place(pos.x, pos.y); });
   },

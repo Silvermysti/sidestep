@@ -21,6 +21,7 @@ export const SETTINGS_DEFAULTS = {
   cycles: 4,
   linkOrder: 'sequential', // 'sequential' (to-do style) | 'random'
   companion: 'bunny', // which pet keeps you company — see lib/companions.js
+  showOnPage: true, // draw the floating companion on web pages during a session
 };
 
 // User configuration. (Stage 1 only really uses focus/break minutes; the rest
