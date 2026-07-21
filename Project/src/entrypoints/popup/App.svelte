@@ -156,9 +156,11 @@
     COMPANION_KEYS.map((k) => COMPANIONS[k].unlockAt).filter((u) => u <= xp).reduce((a, b) => Math.max(a, b), 0)
   );
   let xpFill = $derived(nextLock ? Math.min(1, (xp - prevUnlock) / (nextLock.unlockAt - prevUnlock)) : 1);
-  let xpCaption = $derived(
-    nextLock ? `${nextLock.label} unlocks in ${Math.max(0, Math.ceil(nextLock.unlockAt - xp))} min` : 'All animals unlocked'
+  // Left label leads with what the XP is buying; right value is the running count.
+  let xpLead = $derived(
+    nextLock ? `XP · ${nextLock.label} in ${Math.max(0, Math.ceil(nextLock.unlockAt - xp))}m` : 'XP · all unlocked'
   );
+  let xpValue = $derived(nextLock ? `${Math.floor(xp)} / ${nextLock.unlockAt}` : `${Math.floor(xp)} XP`);
 
   // Grass scroll duration. The CSS baseline is one tile per 9.2s; a companion can
   // scale that with `grassSpeed` (1 = normal, <1 = slower). We feed the result in
@@ -459,22 +461,23 @@
         <div class="ground" class:active={bunnyActive} class:running={bunnyRunning} style="animation-duration: {grassSeconds}s"></div>
       </div>
 
-      <!-- Two matching pixel bars under the scene: Time (session progress) over XP
-           (focus progress toward the next companion unlock). The clock in the sky
-           gives the exact time; these show progress at a glance. -->
+      <!-- Two minimal bars under the scene: Time (session progress) over XP (focus
+           progress toward the next companion unlock). Label + value sit above a
+           hairline track, so the scene and pet stay the star. -->
       <div class="stat-bars">
-        <div class="stat-row">
-          <span class="stat-label">Time</span>
-          <div class="stat-bar">
-            <div class="stat-fill timer" style="width: {progress * 100}%"></div>
+        <div class="mbar">
+          <div class="mbar-head">
+            <span class="mbar-lab">Time left</span>
+            <span class="mbar-val">{formatMs(remaining)}</span>
           </div>
+          <div class="mbar-track"><div class="mbar-fill tm" style="width: {progress * 100}%"></div></div>
         </div>
-        <div class="stat-row">
-          <span class="stat-label">XP</span>
-          <div class="stat-bar">
-            <div class="stat-fill xp" style="width: {xpFill * 100}%"></div>
-            <span class="stat-cap">{xpCaption}</span>
+        <div class="mbar">
+          <div class="mbar-head">
+            <span class="mbar-lab">{xpLead}</span>
+            <span class="mbar-val">{xpValue}</span>
           </div>
+          <div class="mbar-track"><div class="mbar-fill xp" style="width: {xpFill * 100}%"></div></div>
         </div>
       </div>
 
@@ -1055,77 +1058,54 @@
   .confirm-yes:hover,
   .confirm-no:hover { text-decoration: underline; }
 
-  /* The two stat bars, stacked below the scene: Time over XP. They keep the
-     pixel-art look (hard corners, thick dark outline, chunky offset shadow,
-     notched fill reading as blocky "cells") to match the sprite art; only the
-     fill colour differs — blue Time, gold XP — so they read as a matched pair. */
+  /* The two stat bars below the scene — minimal: an uppercase label and its value
+     on one line, over a hairline track. Understated so the scene and pet stay the
+     star; only the fill colour differs (blue Time, gold XP). */
   .stat-bars {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-top: 2px;
+    gap: 11px;
+    margin-top: 4px;
   }
-  .stat-row {
+  .mbar { display: flex; flex-direction: column; gap: 5px; }
+  .mbar-head {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
   }
-  /* Name tag left of the bar. Dark ink (these sit on the cream panel, not the
-     grass). Fixed width so both bars start at the same x. */
-  .stat-label {
-    flex: none;
-    min-width: 42px;
-    font-size: 12px;
+  .mbar-lab {
+    font-size: 10.5px;
     font-weight: 800;
-    letter-spacing: 0.3px;
-    color: var(--ink);
-  }
-  .stat-bar {
-    position: relative; /* anchor for the caption overlaid inside */
-    flex: 1;
-    height: 20px;
-    padding: 2px;
-    background: #6b4a2b; /* dark earthy track under the fill */
-    border: 3px solid #2f2416; /* the sprite-style outline */
-    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25); /* chunky, offset like a sticker */
-    image-rendering: pixelated;
-  }
-  /* Caption centred inside the bar, white with the same outline so it reads over
-     both the bright fill and the dark track behind it. */
-  .stat-cap {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 9.5px;
-    font-weight: 800;
-    letter-spacing: 0.2px;
-    color: #fff;
-    text-shadow: 1px 1px 0 #2f2416, -1px 1px 0 #2f2416, 1px -1px 0 #2f2416, -1px -1px 0 #2f2416;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
     white-space: nowrap;
-    pointer-events: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  /* notch lines every 8px carve every fill into pixel "cells" (shared) */
-  .stat-fill {
+  .mbar-val {
+    flex: none;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .mbar-track {
+    height: 5px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+  .mbar-fill {
     height: 100%;
-    transition: width 0.3s steps(24); /* advances in chunky jumps, not a smooth glide */
+    border-radius: 999px;
+    transition: width 0.3s ease;
   }
-  /* Gold XP: bright top edge, darker base for a beveled look. */
-  .stat-fill.xp {
-    background-image:
-      repeating-linear-gradient(90deg, transparent 0, transparent 6px, rgba(0, 0, 0, 0.22) 6px, rgba(0, 0, 0, 0.22) 8px),
-      linear-gradient(#ffe27a 0, #f5b301 45%, #cf8b00 100%);
-  }
-  /* Calm blue Time bar — distinct from the gold XP, fills as the session runs. */
-  .stat-fill.timer {
-    background-image:
-      repeating-linear-gradient(90deg, transparent 0, transparent 6px, rgba(0, 0, 0, 0.22) 6px, rgba(0, 0, 0, 0.22) 8px),
-      linear-gradient(#a9d3f0 0, #5b9bd5 45%, #326fa8 100%);
-  }
+  .mbar-fill.tm { background: #5b9bd5; }
+  .mbar-fill.xp { background: #f5b301; }
   @media (prefers-reduced-motion: reduce) {
-    .stat-fill { transition: none; }
+    .mbar-fill { transition: none; }
   }
 
   /* Controls */
