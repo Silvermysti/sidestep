@@ -603,27 +603,31 @@
         </button>
 
         {#if buckets.length}
-          {#each buckets as b}
-            <div class="bucket">
-              <div class="bucket-head">
-                <span class="bucket-name">{b.label}</span>
-                <span class="bucket-count">{b.links.length}</span>
+          <!-- Scrolls on its own so every site's links stay reachable no matter
+               how many buckets there are, while the add-link controls above stay put. -->
+          <div class="bucket-scroll">
+            {#each buckets as b}
+              <div class="bucket">
+                <div class="bucket-head">
+                  <span class="bucket-name">{b.label}</span>
+                  <span class="bucket-count">{b.links.length}</span>
+                </div>
+                <ul class="list">
+                  {#each b.links as link, i}
+                    <li>
+                      <div class="link-main">
+                        {#if linkTitle(link)}
+                          <span class="link-title">{linkTitle(link)}</span>
+                        {/if}
+                        <span class="link-url" title={linkUrl(link)}>{prettyUrl(linkUrl(link))}</span>
+                      </div>
+                      <button class="x" onclick={() => removeLink(b.key, i)} aria-label="Remove link">×</button>
+                    </li>
+                  {/each}
+                </ul>
               </div>
-              <ul class="list">
-                {#each b.links as link, i}
-                  <li>
-                    <div class="link-main">
-                      {#if linkTitle(link)}
-                        <span class="link-title">{linkTitle(link)}</span>
-                      {/if}
-                      <span class="link-url" title={linkUrl(link)}>{prettyUrl(linkUrl(link))}</span>
-                    </div>
-                    <button class="x" onclick={() => removeLink(b.key, i)} aria-label="Remove link">×</button>
-                  </li>
-                {/each}
-              </ul>
-            </div>
-          {/each}
+            {/each}
+          </div>
         {:else}
           <div class="empty">No links yet. Add a few you actually want to get to.</div>
         {/if}
@@ -1220,6 +1224,23 @@
   /* A site's bucket of saved links: a small heading with a count, then the links.
      Grouping them this way makes the substitution rule visible — you can see at a
      glance which sites you actually have a better answer ready for. */
+  /* The saved-links list scrolls within the card so all sites' buckets are
+     reachable; the add-link controls above it stay fixed in view. */
+  .bucket-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    /* give the scrollbar its own gutter without shifting the rows inward */
+    padding-right: 4px;
+    margin-right: -6px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--edge) transparent;
+  }
+  .bucket-scroll::-webkit-scrollbar { width: 7px; }
+  .bucket-scroll::-webkit-scrollbar-thumb { background: var(--edge); border-radius: 999px; }
+  .bucket-scroll::-webkit-scrollbar-track { background: transparent; }
   .bucket { display: flex; flex-direction: column; gap: 6px; }
   .bucket-head { display: flex; align-items: center; gap: 7px; padding-left: 2px; }
   .bucket-name { font-size: 12.5px; font-weight: 800; color: var(--ink); }
