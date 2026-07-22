@@ -366,6 +366,7 @@
     <nav class="tabs" role="tablist">
       <button class:active={tab === 'focus'} onclick={() => (tab = 'focus')}>Focus</button>
       <button class:active={tab === 'blocked'} onclick={() => (tab = 'blocked')}>Blocked</button>
+      <button class:active={tab === 'companions'} onclick={() => (tab = 'companions')}>Companion</button>
       <button class:active={tab === 'settings'} onclick={() => (tab = 'settings')}>Settings</button>
     </nav>
   </header>
@@ -555,6 +556,59 @@
       </section>
     {/if}
 
+    <!-- ===================== COMPANION PAGE ===================== -->
+    {#if tab === 'companions'}
+      <section class="card">
+        <div class="card-head">
+          <span class="card-label">Your companions</span>
+        </div>
+
+        <!-- Progress toward the next pet, so the 🔒 prices on the locked tiles
+             below read as "how much further", not just a number. -->
+        <div class="mbar">
+          <div class="mbar-head">
+            <span class="mbar-lab">{xpLead}</span>
+            <span class="mbar-val">{xpValue}</span>
+          </div>
+          <div class="mbar-track"><div class="mbar-fill xp" style="width: {xpFill * 100}%"></div></div>
+        </div>
+
+        <div class="pets">
+          {#each COMPANION_KEYS as key}
+            <button
+              class="pet"
+              class:selected={companion === key}
+              class:locked={!isUnlocked(key, xp)}
+              disabled={!isUnlocked(key, xp)}
+              onclick={() => pickCompanion(key)}
+              aria-pressed={companion === key}
+            >
+              <img src={COMPANIONS[key].icon} alt="" draggable="false" />
+              <span>{COMPANIONS[key].label}</span>
+              {#if !isUnlocked(key, xp)}
+                <span class="lock">🔒 {COMPANIONS[key].unlockAt} XP</span>
+              {/if}
+            </button>
+          {/each}
+        </div>
+
+        <label class="setting toggle-row card-sub">
+          <span class="setting-name">
+            Companion on web pages
+            <small class="setting-note">show the buddy on the page you're reading</small>
+          </span>
+          <input
+            class="toggle"
+            type="checkbox"
+            checked={s.showOnPage ?? true}
+            onchange={(e) => saveSettings({ showOnPage: e.currentTarget.checked })}
+          />
+        </label>
+
+        <p class="hint">Your focus buddy runs alongside you here, and naps on the block page when you step past a distraction. Keep focusing to earn XP and unlock the rest.</p>
+      </section>
+    {/if}
+
     <!-- ===================== SETTINGS PAGE ===================== -->
     {#if tab === 'settings'}
       <section class="card">
@@ -591,41 +645,6 @@
             <button disabled={cyclesAtMax} onclick={() => stepCycles(1)} aria-label="More rounds">+</button>
           </div>
         </div>
-
-        <div class="card-head card-sub">
-          <span class="card-label">Companion</span>
-        </div>
-        <label class="setting toggle-row">
-          <span class="setting-name">
-            Companion on web pages
-            <small class="setting-note">show the buddy on the page you're reading</small>
-          </span>
-          <input
-            class="toggle"
-            type="checkbox"
-            checked={s.showOnPage ?? true}
-            onchange={(e) => saveSettings({ showOnPage: e.currentTarget.checked })}
-          />
-        </label>
-        <div class="pets">
-          {#each COMPANION_KEYS as key}
-            <button
-              class="pet"
-              class:selected={companion === key}
-              class:locked={!isUnlocked(key, xp)}
-              disabled={!isUnlocked(key, xp)}
-              onclick={() => pickCompanion(key)}
-              aria-pressed={companion === key}
-            >
-              <img src={COMPANIONS[key].icon} alt="" draggable="false" />
-              <span>{COMPANIONS[key].label}</span>
-              {#if !isUnlocked(key, xp)}
-                <span class="lock">🔒 {COMPANIONS[key].unlockAt} XP</span>
-              {/if}
-            </button>
-          {/each}
-        </div>
-        <p class="hint">Your focus buddy runs alongside you here, and naps on the block page when you step past a distraction. Earn XP by focusing to unlock more; keep them fed or a hungry pet loses its XP.</p>
       </section>
     {/if}
   {:else}
@@ -683,9 +702,12 @@
     flex: 1;
     border: 0;
     border-radius: 9px;
-    padding: 7px 0;
+    padding: 7px 2px;
     font: inherit;
-    font-size: 12px;
+    /* Four tabs share 344px, and "Companion" is the longest label — keep it on
+       one line and a touch smaller so none of them wrap. */
+    font-size: 11.5px;
+    white-space: nowrap;
     font-weight: 700;
     color: var(--ink-soft);
     background: transparent;
