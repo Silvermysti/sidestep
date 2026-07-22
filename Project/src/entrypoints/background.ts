@@ -6,19 +6,13 @@
 // if it has gone to sleep in the meantime (service workers sleep to save memory,
 // which is why a normal setInterval countdown would NOT survive here).
 
-import { allowances, heartbeat, lists, progress, settings, SETTINGS_DEFAULTS, timer } from '@/lib/storage';
+import { allowances, heartbeat, progress, settings, SETTINGS_DEFAULTS, timer } from '@/lib/storage';
 import { COMPANIONS, unlockedKeys } from '@/lib/companions';
 import {
   activeAllowance,
-  buildAllowedKeys,
-  canonicalKey,
   hostnameOf,
   isDistracting,
-  linkTitle,
-  linkUrl,
   matchingSite,
-  migrateLists,
-  serveNextLink,
 } from '@/lib/sites';
 import {
   startState,
@@ -55,12 +49,6 @@ export default defineBackground(() => {
   // storage fallback only applies when NOTHING is saved). Top up any missing
   // keys from the defaults so the rest of the code always sees a full object.
   healSettings();
-
-  // Likewise, scrub the saved lists: a topic that somehow got stored as anything
-  // other than an array would crash the navigation handler (for…of over a
-  // non-list) and silently stop the redirect. Reset any bad topic to an empty
-  // list so blocking can never be broken by corrupted data.
-  healLists();
 
   // The service worker has just started (browser launch, extension reload, or
   // Chrome waking us for an event). Any session that ran out while we were asleep
@@ -124,7 +112,6 @@ async function healSettings() {
     stored.focusMinutes == null ||
     stored.breakMinutes == null ||
     stored.cycles == null ||
-    stored.linkOrder == null ||
     stored.companion == null ||
     stored.showOnPage == null ||
     stored.theme == null;
@@ -151,44 +138,6 @@ function healBlockList(v: any): string[] {
   return SETTINGS_DEFAULTS.distractingSites;
 }
 
-// Bring the saved lists up to date and make them safe to loop over.
-//
-// Two jobs. First, MIGRATE: saves from before links were bucketed by site still
-// carry topic folders, so we re-file every link under the site it lives on and
-// drop `topics` for good. Second, HEAL: guarantee `sites` is a plain object and
-// every bucket is an array, because a bucket stored as anything else would crash
-// the navigation handler (a for…of over a non-list) and silently stop the
-// redirect. We only write when something actually changed, so we don't churn
-// storage on every startup.
-async function healLists() {
-  const stored: any = await lists.getValue();
-  if (!stored || typeof stored !== 'object') return; // fallback covers a missing value
-
-  const migrated = migrateLists(stored); // null when already the new shape
-  const base: any = migrated ?? stored;
-  let changed = migrated != null;
-
-  const validSites = base.sites && typeof base.sites === 'object' && !Array.isArray(base.sites);
-  if (!validSites) changed = true;
-
-  const fixed: Record<string, any[]> = {};
-  for (const [key, links] of Object.entries(validSites ? base.sites : {})) {
-    if (Array.isArray(links)) {
-      if (links.length) fixed[key] = links; // drop buckets that are now empty
-      else changed = true;
-    } else {
-      changed = true; // a non-list bucket was the crash source — drop it
-    }
-  }
-
-  const cursors =
-    base.cursors && typeof base.cursors === 'object' && !Array.isArray(base.cursors)
-      ? base.cursors
-      : ((changed = true), {});
-
-  if (changed) await lists.setValue({ sites: fixed, cursors });
-}
-
 async function handleNavigation(details: any) {
   const host = hostnameOf(details.url);
   if (!host) return;
@@ -207,32 +156,13 @@ async function handleNavigation(details: any) {
   const a = await allowances.getValue();
   if (activeAllowance(host, a)) return;
 
-  // It's a blocked site — but if THIS exact page/video is one the user saved as
-  // useful, let it through. We test against a Set (hash lookup, ~O(1)) of the
-  // canonical keys of every saved link, instead of scanning the lists each time.
-  const l = await lists.getValue();
-  const allowed = buildAllowedKeys(l);
-  const key = canonicalKey(details.url);
-  if (key && allowed.has(key)) {
-    console.log('[Sidestep] allowed — on your list', key);
-    return;
-  }
-
-  // Not on the list → substitute. We ask for the next link saved for THIS site,
-  // so reaching for YouTube gets you your next saved YouTube video rather than
-  // something unrelated. If nothing is saved for it, serveNextLink falls back to
-  // whichever site has links, so the page is never a dead end.
-  const { link, lists: updated } = serveNextLink(l, host);
-  await lists.setValue(updated);
-
-  const url = linkUrl(link);
-  const title = linkTitle(link);
+  // Blocked, in focus, with no pass → send them to the nudge page. It carries the
+  // site they reached for (`from`) and the exact page they wanted (`orig`), so
+  // "allow + go" can hand them straight back to it.
   const nudgeUrl =
     browser.runtime.getURL('/nudge.html') +
     `?from=${encodeURIComponent(host)}` +
-    `&orig=${encodeURIComponent(details.url)}` + // so "allow + go" can return here
-    (url ? `&to=${encodeURIComponent(url)}` : '') +
-    (title ? `&title=${encodeURIComponent(title)}` : '');
+    `&orig=${encodeURIComponent(details.url)}`;
 
   browser.tabs.update(details.tabId, { url: nudgeUrl });
 }

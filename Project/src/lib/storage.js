@@ -19,7 +19,6 @@ export const SETTINGS_DEFAULTS = {
   // How many rounds of (focus + break) to run before stopping. A number, or the
   // string 'continuous' to keep cycling until you stop it yourself.
   cycles: 4,
-  linkOrder: 'sequential', // 'sequential' (to-do style) | 'random'
   companion: 'bunny', // which pet keeps you company — see lib/companions.js
   showOnPage: true, // draw the floating companion on web pages during a session
   theme: 'meadow', // scene skin: 'meadow' | 'autumn' | 'rainy'
@@ -72,21 +71,6 @@ export const progress = storage.defineItem('local:progress', {
 // in the same spot everywhere.
 export const overlay = storage.defineItem('local:overlay', {
   fallback: { x: null, y: null },
-});
-
-// The user's own useful links, bucketed by the SITE each one lives on.
-//   sites   : { siteKey: [ { url, title }, ... ] }
-//   cursors : { siteKey: n }  — which link to serve next FOR THAT SITE
-// A link's bucket is worked out from its own URL (see siteKeyOf in sites.js), so
-// there is nothing to choose when saving. The point of bucketing by site is the
-// substitution: reach for youtube.com and you get your next saved YouTube link,
-// reach for amazon.com and you get the thing you actually meant to buy. Each site
-// keeps its own cursor so the queues don't interfere.
-export const lists = storage.defineItem('local:lists', {
-  fallback: {
-    sites: {},
-    cursors: {},
-  },
 });
 
 // The "thought parking lot" (Stage 6). When a distraction is intercepted, the

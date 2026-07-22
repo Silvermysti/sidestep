@@ -1,62 +1,55 @@
 <script>
-  // This page is what a redirected tab shows. The background script tells us in
-  // the URL which site we stepped past (`from`) and which single link it served
-  // next (`to`/`title`, shown as a highlighted suggestion) — that link comes from
-  // the same site where possible. For the full menu we read the saved lists
-  // straight from storage; they are already bucketed by site, and the site you
-  // reached for floats to the top.
+  // This page is what a redirected tab shows. The background tells us in the URL
+  // which site we stepped past (`from`) and the exact page they were heading to
+  // (`orig`), so "allow + go" can hand them straight back to it.
+  //
+  // It's a pause, not a wall: jot down whatever pulled you here, see the thoughts
+  // you've already parked, see the sites you're protecting, and — if you genuinely
+  // need this one — open a freedom window for it.
   import { onMount } from 'svelte';
   import { browser } from '#imports';
-  import { lists, settings } from '@/lib/storage';
+  import { parkingLot, settings } from '@/lib/storage';
   import { COMPANIONS, DEFAULT_COMPANION } from '@/lib/companions';
   import { parkThought } from '@/lib/parking';
-  import { groupLinksBySite, linkTitle, linkUrl, siteGroup } from '@/lib/sites';
 
   const params = new URLSearchParams(location.search);
   const from = params.get('from') ?? 'that site';
   const orig = params.get('orig'); // the exact page the user was heading to
-  const to = params.get('to');
-  const title = params.get('title');
 
-  let groups = $state([]);
-  let loaded = $state(false);
-  // Has the user saved anything for the site they just reached for? If not we say
-  // so plainly, because the "Next up" link they're being offered came from a
-  // different site (the fallback) and it would be confusing not to mention it.
-  let hasFromLinks = $derived(groups.some((g) => g.key === siteGroup(from).key));
   // The thought parking lot: whatever pulled them here, jotted down so it stops
   // nagging. `parked` briefly confirms the save.
   let parkDraft = $state('');
   let parked = $state(false);
+  let thoughts = $state([]); // [{ text, savedAt, done }] — newest first
+  let blockedSites = $state([]); // the sites being protected this session
+  let loaded = $state(false);
 
   // Which pet naps on this page follows the companion chosen in settings.
   let companionKey = $state(DEFAULT_COMPANION);
   let pet = $derived(COMPANIONS[companionKey]);
 
   onMount(async () => {
-    const l = await lists.getValue();
-    groups = groupLinksBySite(l, from); // site you reached for floats to front
-    loaded = true;
     const cfg = await settings.getValue();
     companionKey = cfg?.companion ?? DEFAULT_COMPANION;
+    blockedSites = Array.isArray(cfg?.distractingSites) ? cfg.distractingSites : [];
+    thoughts = await readThoughts();
+    loaded = true;
   });
 
-  // Save a stray thought to the parking lot, then clear the box and flash a note.
+  // Never trust a corrupted value — the list must be safe to loop over.
+  async function readThoughts() {
+    const stored = await parkingLot.getValue();
+    return Array.isArray(stored) ? stored : [];
+  }
+
+  // Save a stray thought, then clear the box, flash a note, and refresh the list
+  // below so the thought they just typed appears straight away.
   async function park() {
     if (!(await parkThought(parkDraft))) return; // empty box — nothing to save
     parkDraft = '';
+    thoughts = await readThoughts();
     parked = true;
     setTimeout(() => (parked = false), 2600);
-  }
-
-  function prettyUrl(u) {
-    try {
-      const url = new URL(u);
-      const tail = url.pathname.replace(/\/$/, '') + url.search;
-      return url.hostname.replace(/^www\./, '') + tail;
-    } catch {
-      return u;
-    }
   }
 
   function open(u) {
@@ -67,7 +60,7 @@
   // `minutes` is a number or the string 'forever'.
   async function allow(minutes) {
     await browser.runtime.sendMessage({ action: 'allowSite', host: from, minutes });
-    open(orig || to || `https://${from}`);
+    open(orig || `https://${from}`);
   }
 </script>
 
@@ -96,7 +89,7 @@
     </div>
 
     <h1>You were heading to <span class="from">{from}</span></h1>
-    <p class="sub">You're in a focus session. Here's what you actually wanted to get to.</p>
+    <p class="sub">You're in a focus session. Park the thought, then get back to it.</p>
 
     <div class="park">
       <label class="park-q" for="park-input">Was there something you meant to do there?</label>
@@ -115,44 +108,39 @@
       {/if}
     </div>
 
-    {#if to}
-      <button class="go" onclick={() => open(to)}>
-        <span class="go-tag">Next up</span>
-        <span class="go-label">{title || prettyUrl(to)}</span>
-        <span class="go-url">{prettyUrl(to)}</span>
-        <span class="go-arrow" aria-hidden="true">→</span>
-      </button>
-    {/if}
-
     {#if loaded}
-      <!-- Nothing saved for the site they reached for. Say exactly that, rather
-           than a generic "you have no links" — anything they've saved for OTHER
-           sites is still offered below, so a blanket empty message would be a lie. -->
-      {#if !hasFromLinks}
-        <div class="empty">No saved focus links from this site yet.</div>
-      {/if}
+      <!-- Everything already parked, so the thought that just pulled them here
+           lands among the others instead of vanishing into the popup. -->
+      <section class="sec">
+        <h2 class="sec-title">Parked thoughts</h2>
+        {#if thoughts.length}
+          <ul class="thoughts">
+            {#each thoughts as th}
+              <li class="thought" class:done={th.done}>
+                <span class="t-dot" aria-hidden="true"></span>
+                <span class="t-text">{th.text}</span>
+              </li>
+            {/each}
+          </ul>
+        {:else}
+          <div class="empty">Nothing parked yet — jot one above and it'll wait here.</div>
+        {/if}
+      </section>
 
-      {#if groups.length}
-        <div class="menu">
-          {#each groups as g}
-            <section class="site">
-              <h2 class="site-name">{g.label}</h2>
-              <ul>
-                {#each g.links as link}
-                  <li>
-                    <button class="link" onclick={() => open(linkUrl(link))}>
-                      <span class="l-title">{linkTitle(link) || prettyUrl(linkUrl(link))}</span>
-                      {#if linkTitle(link)}
-                        <span class="l-url">{prettyUrl(linkUrl(link))}</span>
-                      {/if}
-                    </button>
-                  </li>
-                {/each}
-              </ul>
-            </section>
-          {/each}
-        </div>
-      {/if}
+      <!-- The sites being held back right now; the one they just reached for is
+           marked, so it's clear which of them stopped this tab. -->
+      <section class="sec">
+        <h2 class="sec-title">Sites you're protecting</h2>
+        {#if blockedSites.length}
+          <ul class="ovals">
+            {#each blockedSites as site}
+              <li class="oval" class:current={site === from}>{site}</li>
+            {/each}
+          </ul>
+        {:else}
+          <div class="empty">No sites on the list yet.</div>
+        {/if}
+      </section>
     {/if}
 
     <div class="allow">
@@ -348,74 +336,78 @@
   .park-btn:hover { filter: brightness(0.97); }
   .park-done { font-size: 11.5px; font-weight: 700; color: var(--accent-deep); }
 
-  /* Highlighted "next up" suggestion */
-  .go {
-    width: 100%;
-    border: 0;
-    cursor: pointer;
-    border-radius: var(--r);
-    padding: 15px 20px;
-    background: var(--accent);
-    color: #211C3D; /* dark ink reads best on the light periwinkle accent */
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
-    gap: 2px;
-    position: relative;
-    box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 38%, transparent);
-    transition: filter 0.15s ease, transform 0.05s ease;
-  }
-  .go:hover { filter: brightness(1.04); }
-  .go:active { transform: translateY(1px); }
-  .go-tag { font-size: 10.5px; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; opacity: 0.85; }
-  .go-label {
-    font-size: 16px; font-weight: 800;
-    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .go-url {
-    font-size: 13px; opacity: 0.85;
-    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .go-arrow { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 22px; opacity: 0.9; }
-
-  /* The grouped menu */
-  .menu { margin-top: 22px; text-align: left; display: flex; flex-direction: column; gap: 18px; }
-  .site { display: flex; flex-direction: column; gap: 8px; }
-  .site-name {
+  /* Sections below the jot box: parked thoughts, then the protected sites. The
+     card is a plain block, so each section carries its own top spacing. */
+  .sec { margin-top: 22px; text-align: left; display: flex; flex-direction: column; gap: 9px; }
+  .sec .empty { margin-top: 0; }
+  .sec-title {
     font-family: 'Fredoka', 'Nunito', sans-serif;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--accent-deep);
     margin: 0;
     padding-bottom: 6px;
     border-bottom: 1.5px solid var(--line);
   }
-  .site ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
 
-  .link {
-    width: 100%;
-    border: 0;
-    cursor: pointer;
-    border-radius: 11px;
-    padding: 10px 13px;
-    background: var(--surface-2);
+  /* Parked thoughts — read-only here; you tick them off back in the popup. The
+     list scrolls once it gets long so the card never runs off the screen. */
+  .thoughts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
-    gap: 1px;
-    transition: background 0.15s ease, transform 0.05s ease;
+    gap: 5px;
+    max-height: 190px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
   }
-  .link:hover { background: var(--accent-tint); }
-  .link:active { transform: translateY(1px); }
-  .l-title {
-    font-size: 13.5px; font-weight: 700; color: var(--ink);
-    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  .thoughts::-webkit-scrollbar { width: 7px; }
+  .thoughts::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 999px; }
+  .thoughts::-webkit-scrollbar-track { background: transparent; }
+  .thought {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    background: var(--surface-2);
+    border-radius: 11px;
+    padding: 10px 13px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
   }
-  .l-url {
-    font-size: 11.5px; color: var(--ink-soft);
-    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  .t-dot {
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-deep);
+    transform: translateY(-1px);
+  }
+  .t-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  /* Already handled — kept visible but clearly settled. */
+  .thought.done { opacity: 0.55; }
+  .thought.done .t-text { text-decoration: line-through; }
+  .thought.done .t-dot { background: var(--ink-faint); }
+
+  /* The protected sites, as ovals — the same shape as the chips in the popup. */
+  .ovals { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 7px; }
+  .oval {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    background: var(--surface-2);
+    border: 1.5px solid transparent;
+    border-radius: 999px;
+    padding: 5px 13px;
+  }
+  /* The one that stopped this tab. */
+  .oval.current {
+    background: var(--accent-tint);
+    border-color: var(--accent);
+    color: var(--accent-deep);
   }
 
   .empty {
