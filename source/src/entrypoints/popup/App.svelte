@@ -32,7 +32,7 @@
     })();
 
     for (const c of Object.values(COMPANIONS)) {
-      for (const src of [...c.run, c.sit]) { const im = new Image(); im.src = src; }
+      for (const src of [...c.run, c.sit, c.sleep]) { const im = new Image(); im.src = src; }
     }
 
     const unwatchT = timer.watch((v) => (t = v));
@@ -130,6 +130,10 @@
   let bunnyFrame = $state(0);
   let bunnyRunning = $derived(t?.status === 'running' && isFocus);
   let bunnyActive = $derived((t?.status === 'running' || t?.status === 'paused') && isFocus);
+  let sleeping = $derived(t?.mode === 'break' && t?.status !== 'idle');
+  let petPose = $derived(
+    bunnyRunning ? sprite.run[bunnyFrame % sprite.run.length] : sleeping ? sprite.sleep : sprite.sit
+  );
 
   $effect(() => {
     if (!bunnyRunning) { bunnyFrame = 0; return; }
@@ -313,7 +317,14 @@
         </div>
 
         <div class="bunny-slot">
-          <img class="bunny-sprite" style="width:{sprite.width}px" src={bunnyRunning ? sprite.run[bunnyFrame % sprite.run.length] : sprite.sit} alt="" draggable="false" />
+          <div class="pet-wrap" style="width:{sprite.width}px">
+            <img class="bunny-sprite" src={petPose} alt="" draggable="false" />
+            {#if sleeping}
+              <img class="z z1" src="/scene/z.png" alt="" />
+              <img class="z z2" src="/scene/z.png" alt="" />
+              <img class="z z3" src="/scene/z.png" alt="" />
+            {/if}
+          </div>
         </div>
 
         <div class="ground" class:active={bunnyActive} class:running={bunnyRunning} style="animation-duration: {grassSeconds}s"></div>
@@ -691,10 +702,32 @@
     display: flex;
     justify-content: center;
   }
+  .pet-wrap { position: relative; }
   .bunny-sprite {
+    display: block;
+    width: 100%;
     height: auto;
     user-select: none;
     -webkit-user-drag: none;
+  }
+  .z {
+    position: absolute;
+    image-rendering: pixelated;
+    opacity: 0;
+    animation: zrise 3.9s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .z1 { left: 47%; top: 2%;   width: 12px; animation-delay: 0s; }
+  .z2 { left: 57%; top: -14%; width: 16px; animation-delay: 1.3s; }
+  .z3 { left: 68%; top: -32%; width: 20px; animation-delay: 2.6s; }
+  @keyframes zrise {
+    0%   { opacity: 0; transform: translateY(6px) scale(0.7); }
+    18%  { opacity: 1; }
+    55%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-18px) scale(1.05); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .z { animation: none; opacity: 0.85; }
   }
 
   .ground {
