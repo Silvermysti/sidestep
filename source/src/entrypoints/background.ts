@@ -1,5 +1,6 @@
 import { allowances, heartbeat, progress, settings, SETTINGS_DEFAULTS, timer } from '@/lib/storage';
 import { COMPANIONS, unlockedKeys } from '@/lib/companions';
+import { THEMES, unlockedThemeKeys } from '@/lib/themes';
 import {
   activeAllowance,
   hostnameOf,
@@ -257,21 +258,31 @@ async function applyProgress(elapsedMs: number) {
   const focusing = t.status === 'running' && t.mode === 'focus';
   if (!focusing) return;
 
-  const before = unlockedKeys(p?.xp ?? 0);
-  const xp = (p?.xp ?? 0) + XP_PER_MIN * (elapsedMs / 60000);
+  const prevXp = p?.xp ?? 0;
+  const xp = prevXp + XP_PER_MIN * (elapsedMs / 60000);
   await progress.setValue({ xp });
 
-  const after = unlockedKeys(xp);
-  for (const key of after) if (!before.includes(key)) notifyUnlock(key);
+  const before = unlockedKeys(prevXp);
+  for (const key of unlockedKeys(xp)) {
+    if (before.includes(key)) continue;
+    const label = (COMPANIONS as any)[key]?.label ?? key;
+    notifyUnlock(label, `You focused enough to earn the ${label}. Choose it in the Companion tab.`);
+  }
+
+  const beforeThemes = unlockedThemeKeys(prevXp);
+  for (const key of unlockedThemeKeys(xp)) {
+    if (beforeThemes.includes(key)) continue;
+    const label = (THEMES as any)[key]?.label ?? key;
+    notifyUnlock(`${label} theme`, `A new scene is yours. Pick it from the dots at the top of the popup.`);
+  }
 }
 
-function notifyUnlock(key: string) {
-  const label = (COMPANIONS as any)[key]?.label ?? key;
+function notifyUnlock(label: string, message: string) {
   browser.notifications.create({
     type: 'basic',
     iconUrl: browser.runtime.getURL('/icon/128.png'),
     title: `${label} unlocked!`,
-    message: `You focused enough to earn the ${label}. Choose it in the Companion tab.`,
+    message,
   });
 }
 

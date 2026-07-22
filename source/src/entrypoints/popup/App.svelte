@@ -6,6 +6,7 @@
   import { durationMs, formatMs, getRemainingMs, totalCycles } from '@/lib/timer';
   import { COMPANIONS, COMPANION_KEYS, DEFAULT_COMPANION, isUnlocked } from '@/lib/companions';
   import { hostnameOf, normalizeUrl, siteToBlock } from '@/lib/sites';
+  import { THEMES, THEME_KEYS, DEFAULT_THEME, isThemeUnlocked } from '@/lib/themes';
 
   let tab = $state('focus');
 
@@ -89,16 +90,14 @@
   let companion = $derived(s?.companion ?? DEFAULT_COMPANION);
   let sprite = $derived(COMPANIONS[companion]);
 
-  const THEMES = {
-    meadow: { label: 'Meadow', bg: 'url(/scene/background.png)', grass: '/scene/grass.png', tile: 1571, dot: '#8CC98C' },
-    autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 1459, dot: '#E7A184', pos: 'center 100%', zoom: '125%' },
-    rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1743, dot: '#9DA6EE', zoom: '133%', pos: 'center 75%', grassBottom: '0%', grassHeight: '62%' },
-  };
-  const THEME_KEYS = Object.keys(THEMES);
-  let theme = $derived(s?.theme && THEMES[s.theme] ? s.theme : 'meadow');
+  let xp = $derived(prog?.xp ?? 0);
+
+  let theme = $derived(
+    s?.theme && THEMES[s.theme] && (prog == null || isThemeUnlocked(s.theme, xp)) ? s.theme : DEFAULT_THEME
+  );
   let scene = $derived(THEMES[theme]);
   function pickTheme(key) {
-    if (key === theme) return;
+    if (key === theme || !isThemeUnlocked(key, xp)) return;
     saveSettings({ theme: key });
   }
 
@@ -108,10 +107,16 @@
     root.dataset.mode = isFocus ? 'focus' : 'break';
   });
 
-  let xp = $derived(prog?.xp ?? 0);
-  let nextLock = $derived(COMPANION_KEYS.map((k) => COMPANIONS[k]).find((c) => xp < c.unlockAt) ?? null);
+  const UNLOCKS = [
+    ...COMPANION_KEYS.map((k) => COMPANIONS[k]),
+    ...THEME_KEYS.map((k) => THEMES[k]),
+  ]
+    .filter((u) => u.unlockAt > 0)
+    .sort((a, b) => a.unlockAt - b.unlockAt);
+
+  let nextLock = $derived(UNLOCKS.find((u) => xp < u.unlockAt) ?? null);
   let prevUnlock = $derived(
-    COMPANION_KEYS.map((k) => COMPANIONS[k].unlockAt).filter((u) => u <= xp).reduce((a, b) => Math.max(a, b), 0)
+    UNLOCKS.map((u) => u.unlockAt).filter((u) => u <= xp).reduce((a, b) => Math.max(a, b), 0)
   );
   let xpFill = $derived(nextLock ? Math.min(1, (xp - prevUnlock) / (nextLock.unlockAt - prevUnlock)) : 1);
   let xpLead = $derived(
@@ -256,10 +261,16 @@
           <button
             class="theme-dot"
             class:selected={theme === key}
+            class:locked={!isThemeUnlocked(key, xp)}
+            disabled={!isThemeUnlocked(key, xp)}
             style="--dot: {THEMES[key].dot}"
             onclick={() => pickTheme(key)}
-            title="{THEMES[key].label} theme"
-            aria-label="{THEMES[key].label} theme"
+            title={isThemeUnlocked(key, xp)
+              ? `${THEMES[key].label} theme`
+              : `${THEMES[key].label} theme · unlocks at ${THEMES[key].unlockAt} XP`}
+            aria-label={isThemeUnlocked(key, xp)
+              ? `${THEMES[key].label} theme`
+              : `${THEMES[key].label} theme, locked until ${THEMES[key].unlockAt} XP`}
             aria-pressed={theme === key}
           ></button>
         {/each}
@@ -569,7 +580,13 @@
     cursor: pointer;
     transition: transform 0.1s ease;
   }
-  .theme-dot:hover { transform: translateY(-1px); }
+  .theme-dot:hover:not(.locked) { transform: translateY(-1px); }
+  .theme-dot.locked {
+    cursor: not-allowed;
+    opacity: 0.4;
+    filter: grayscale(0.85);
+    box-shadow: none;
+  }
   .theme-dot.selected {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
