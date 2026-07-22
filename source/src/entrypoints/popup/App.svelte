@@ -3,32 +3,22 @@
   import { browser } from '#imports';
   import { settings, timer, allowances, parkingLot, progress as progressStore } from '@/lib/storage';
   import { parkThought } from '@/lib/parking';
-  import { durationMs, formatMs, totalCycles } from '@/lib/timer';
+  import { durationMs, formatMs, getRemainingMs, totalCycles } from '@/lib/timer';
   import { COMPANIONS, COMPANION_KEYS, DEFAULT_COMPANION, isUnlocked } from '@/lib/companions';
   import { hostnameOf, normalizeUrl, siteToBlock } from '@/lib/sites';
 
-  // Which top tab is showing. The popup is now split into pages instead of one
-  // long scroll; this single piece of state decides which page is visible.
   let tab = $state('focus');
 
-  // Local copies of saved state, kept in sync with `.watch()`.
   let t = $state(null);
   let s = $state(null);
-  let al = $state(null); // active freedom windows: { site: expiry }
-  let prog = $state(null); // gamification: { xp } — drives the XP bar
-  let pl = $state([]); // parked thoughts: [{ text, savedAt, done }]
-  let parkDraft = $state(''); // the "jot a thought" box on the Focus tab
-  let adding = $state(false); // is that box open? kept shut so the list stays easy to read
-  let parkInput; // the <input> element, so we can focus it the moment it opens
-  // Which thought is asking "Remove this?" right now. We key on `savedAt` rather
-  // than the row number, because parking a new thought shifts every row down —
-  // an index would suddenly point at the wrong thought.
+  let al = $state(null);
+  let prog = $state(null);
+  let pl = $state([]);
+  let parkDraft = $state('');
+  let adding = $state(false);
+  let parkInput = $state();
   let confirmAt = $state(null);
-  // `now` ticks every quarter second so the countdown updates smoothly (display
-  // only — the real timing lives in `endsAt`).
   let now = $state(Date.now());
-
-  // Draft text for the editable inputs.
   let siteDraft = $state('');
 
   onMount(() => {
@@ -40,8 +30,6 @@
       pl = await parkingLot.getValue();
     })();
 
-    // Warm the browser cache so no run cycle flickers on its first loop. We warm
-    // every companion's frames, so switching companions later is instant too.
     for (const c of Object.values(COMPANIONS)) {
       for (const src of [...c.run, c.sit]) { const im = new Image(); im.src = src; }
     }
@@ -63,24 +51,18 @@
     };
   });
 
-  // Parked thoughts — jotted here, or on the redirect page when a distraction is
-  // intercepted. Ticking one off marks it done: a tiny, satisfying "handled it".
-  // The ＋ toggles the jot box. It stays shut by default: an always-open input
-  // adds clutter to a list you mostly want to skim. `tick()` waits for Svelte to
-  // actually put the <input> on the page before we try to focus it.
   async function toggleAdd() {
     adding = !adding;
     if (adding) {
       await tick();
       parkInput?.focus();
     } else {
-      parkDraft = ''; // closing discards whatever was half-typed
+      parkDraft = '';
     }
   }
 
-  // Save, then close the box again so we're back to a clean, readable list.
   async function addThought() {
-    if (!(await parkThought(parkDraft))) return; // empty box — leave it open
+    if (!(await parkThought(parkDraft))) return;
     parkDraft = '';
     adding = false;
   }
@@ -88,8 +70,6 @@
     await parkingLot.setValue(pl.map((p, idx) => (idx === i ? { ...p, done: !p.done } : p)));
   }
 
-  // Removing asks first: the row swaps to "Remove this thought? Yes / No", so a
-  // stray click never silently loses something you meant to come back to.
   function askRemove(savedAt) {
     confirmAt = savedAt;
   }
@@ -101,28 +81,14 @@
     confirmAt = null;
   }
 
-  // Derived display values — recompute automatically when their inputs change.
-  let remaining = $derived(t && s ? remainingFor(t, now) : 0);
+  let remaining = $derived(t && s ? getRemainingMs(t, now) : 0);
   let total = $derived(t && s ? durationMs(t.mode, s) : 1);
   let progress = $derived(total > 0 ? Math.min(1, 1 - remaining / total) : 0);
   let isFocus = $derived(t?.mode === 'focus');
 
-  // --- Companion ---
-  // The run cycle plays only while a focus session is actually running; the
-  // companion sits still when idle, paused, or on a break (it's a "body-double"
-  // — it works alongside you, and rests when you rest). ~119ms/frame ≈ 8fps.
-  //
-  // Which pet is on screen comes from the saved settings (chosen on the Settings
-  // tab). The sprite sets themselves live in lib/companions.js, shared with the
-  // block page. `?? DEFAULT_COMPANION` covers older saved settings that predate
-  // the choice.
   let companion = $derived(s?.companion ?? DEFAULT_COMPANION);
   let sprite = $derived(COMPANIONS[companion]);
 
-  // --- Scene themes ---
-  // Each theme reskins the habitat: a background image and a scrolling grass
-  // strip. `tile` is that strip's exact pixel width, fed to the grass so the loop
-  // lines up; `dot` is the colour of its picker circle.
   const THEMES = {
     meadow: { label: 'Meadow', bg: 'url(/scene/background.png)', grass: '/scene/grass.png', tile: 1571, dot: '#8CC98C' },
     autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 1459, dot: '#E7A184', pos: 'center 100%', zoom: '125%' },
@@ -136,49 +102,30 @@
     saveSettings({ theme: key });
   }
 
-  // Paint the whole popup in the active scene's palette, and warm the accent
-  // during breaks. We tag <html> with data-theme / data-mode; app.css keys every
-  // colour token off those two attributes, so the entire UI recolours together.
   $effect(() => {
     const root = document.documentElement;
     root.dataset.theme = theme;
     root.dataset.mode = isFocus ? 'focus' : 'break';
   });
 
-  // --- XP meter ---
-  // XP is measured in focus minutes, owned by the background (lib/storage
-  // `progress`) — here we only display it. It only ever grows (earned by
-  // focusing), so a companion stays unlocked once earned.
   let xp = $derived(prog?.xp ?? 0);
-  // The next pet still locked at this XP (companions are listed in ascending
-  // unlock order), and the XP already banked toward it, so the XP bar fills from
-  // one milestone to the next rather than from zero every time.
   let nextLock = $derived(COMPANION_KEYS.map((k) => COMPANIONS[k]).find((c) => xp < c.unlockAt) ?? null);
   let prevUnlock = $derived(
     COMPANION_KEYS.map((k) => COMPANIONS[k].unlockAt).filter((u) => u <= xp).reduce((a, b) => Math.max(a, b), 0)
   );
   let xpFill = $derived(nextLock ? Math.min(1, (xp - prevUnlock) / (nextLock.unlockAt - prevUnlock)) : 1);
-  // Left label leads with what the XP is buying; right value is the running count.
   let xpLead = $derived(
     nextLock ? `XP · ${nextLock.label} in ${Math.max(0, Math.ceil(nextLock.unlockAt - xp))}m` : 'XP · all unlocked'
   );
   let xpValue = $derived(nextLock ? `${Math.floor(xp)} / ${nextLock.unlockAt}` : `${Math.floor(xp)} XP`);
 
-  // Grass scroll duration. The CSS baseline is one tile per 9.2s; a companion can
-  // scale that with `grassSpeed` (1 = normal, <1 = slower). We feed the result in
-  // as an inline animation-duration, which overrides the CSS shorthand's 9.2s.
   const BASE_GRASS_S = 9.2;
   let grassSeconds = $derived((BASE_GRASS_S / (sprite.grassSpeed ?? 1)).toFixed(3));
 
   let bunnyFrame = $state(0);
   let bunnyRunning = $derived(t?.status === 'running' && isFocus);
-  // The grass scroll stays *attached* through both running and paused so that
-  // pausing freezes it in place (play-state) instead of snapping back to start.
   let bunnyActive = $derived((t?.status === 'running' || t?.status === 'paused') && isFocus);
-  // Start/stop the frame-swap loop whenever the running state flips. Returning
-  // the cleanup clears the old interval before the next run — no leaked timers.
-  // Reading `sprite` here means the loop restarts (at the right speed and length)
-  // if the companion ever changes mid-run.
+
   $effect(() => {
     if (!bunnyRunning) { bunnyFrame = 0; return; }
     const frames = sprite.run.length;
@@ -187,8 +134,7 @@
   });
 
   let sites = $derived(s?.distractingSites ?? []);
-  // Freedom windows that are still active right now (recomputes as `now` ticks,
-  // so an expired one disappears on its own).
+
   let allowed = $derived(
     al
       ? Object.entries(al)
@@ -207,16 +153,6 @@
     send('revokeSite', { host: site });
   }
 
-  function remainingFor(t, now) {
-    if (t.status === 'running' && t.endsAt != null) return Math.max(0, t.endsAt - now);
-    return t.remainingMs;
-  }
-
-  // The moment our countdown reaches zero, ask the background to do the handover
-  // (focus -> break -> next round). The background has its own alarms for this and
-  // works fine with the popup shut; this just means that when you ARE watching, the
-  // switch happens the instant the clock hits 00:00 instead of whenever Chrome
-  // gets round to waking it. `syncing` stops us asking over and over.
   let syncing = false;
   $effect(() => {
     if (!t || t.status !== 'running' || remaining > 0 || syncing) return;
@@ -230,18 +166,10 @@
     browser.runtime.sendMessage({ action, ...extra });
   }
 
-  // Save a change to settings. `s` is a Svelte reactive value, which means its
-  // nested block-list array stays wrapped in a reactive proxy (a stand-in object)
-  // even after we spread it. Handing that proxy to storage can save the block
-  // list as something that is no longer a plain array — and the blocker ignores a
-  // list that isn't a real array, so blocking would silently stop. $state.snapshot
-  // unwraps the proxy back into plain data first, so what we store is always the
-  // real thing. Every settings write goes through here.
   function saveSettings(patch) {
     return settings.setValue($state.snapshot({ ...s, ...patch }));
   }
 
-  // --- Sites to redirect (the user's own block-list) ---
   async function addSite() {
     const host = hostnameOf(normalizeUrl(siteDraft) ?? '');
     if (!host || sites.includes(host)) { siteDraft = ''; return; }
@@ -253,10 +181,6 @@
     await saveSettings({ distractingSites: sites.filter((x) => x !== host) });
   }
 
-  // Block whatever site the active tab is on. We drop the path/query (so it's the
-  // site, not one page) and strip only www./m./mobile. — keeping the real
-  // subdomain, so gemini.google.com blocks just that, not all of google. The new
-  // chip appears immediately so the user can see (and edit/remove) what got added.
   async function blockCurrentSite() {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     const host = siteToBlock(hostnameOf(tab?.url ?? '') ?? '');
@@ -264,21 +188,10 @@
     await saveSettings({ distractingSites: [...sites, host] });
   }
 
-  // --- Settings: session lengths ---
-  // The lengths you can pick, as fixed presets rather than "add 5 and clamp".
-  // Clamping produced odd values: drop below 1 and it pinned to 1, so every step
-  // after that was 6, 11, 16… These lists also let the short end be finer than
-  // the long end, which a single step size can't do. 1 min is kept so a session
-  // can be demoed (and tested) end to end in a few seconds.
   const FOCUS_STEPS = [1, 5, 10, 15, 20, 25, 30, 45, 60, 90];
   const BREAK_STEPS = [1, 3, 5, 10, 15, 20, 30];
-  // How many rounds of focus+break to run. 'continuous' sits at the end of the
-  // list, so pressing + past the largest number means "just keep going".
   const CYCLE_STEPS = [1, 2, 3, 4, 5, 6, 8, 10, 12, 'continuous'];
 
-  // Move one place along the list. `dir` is -1 (shorter) or +1 (longer). We find
-  // where the saved value sits — snapping to the nearest preset if an old save
-  // holds something off-list, like 11 — then step from there and stop at the ends.
   async function stepMinutes(field, dir) {
     const steps = field === 'focusMinutes' ? FOCUS_STEPS : BREAK_STEPS;
     const current = s[field];
@@ -286,39 +199,32 @@
     for (let i = 1; i < steps.length; i++) {
       if (Math.abs(steps[i] - current) < Math.abs(steps[nearest] - current)) nearest = i;
     }
-    // If we're already exactly on a preset, move off it. If we snapped from an
-    // off-list value, land on the snapped preset first rather than skipping past it.
+
     const onPreset = steps[nearest] === current;
     const next = onPreset ? nearest + dir : nearest;
     const i = Math.max(0, Math.min(steps.length - 1, next));
 
     await saveSettings({ [field]: steps[i] });
-    // Sitting idle? Reset so the clock shows the new length straight away.
+
     if (t.status === 'idle') send('reset');
   }
 
-  // Rounds work the same way, but the list ends in 'continuous' rather than a
-  // number, so it needs its own small stepper: find where we are, move one place.
   async function stepCycles(dir) {
     const at = CYCLE_STEPS.indexOf(s.cycles);
-    // An off-list value (or a missing one) snaps to the default of 4 rounds.
     const from = at === -1 ? CYCLE_STEPS.indexOf(4) : at;
     const i = Math.max(0, Math.min(CYCLE_STEPS.length - 1, at === -1 ? from : from + dir));
     await saveSettings({ cycles: CYCLE_STEPS[i] });
   }
 
-  // Pick which pet keeps you company. Saved to settings so the habitat here and
-  // the block page both follow it. Changing it takes effect right away.
   async function pickCompanion(key) {
     if (key === companion) return;
-    if (!isUnlocked(key, xp)) return; // still locked — earn the XP first
+    if (!isUnlocked(key, xp)) return;
     await saveSettings({ companion: key });
   }
 
   let cycles = $derived(s ? s.cycles : 4);
   let cycleLabel = $derived(cycles === 'continuous' ? '∞' : String(cycles));
-  // "Round 2 of 4" under the clock, so a run never feels open-ended. Hidden when
-  // idle — there's no round in progress to report.
+
   let roundLabel = $derived(
     !t || !s || t.status === 'idle'
       ? ''
@@ -327,8 +233,6 @@
         : `Round ${t.cycle ?? 1} of ${totalCycles(s)}`
   );
 
-  // Grey out a button once you're at the end of its list, so it's clear there's
-  // nothing further that way.
   let cyclesAtMin = $derived(s ? s.cycles === CYCLE_STEPS[0] : false);
   let cyclesAtMax = $derived(s ? s.cycles === CYCLE_STEPS[CYCLE_STEPS.length - 1] : false);
   let focusAtMin = $derived(s ? s.focusMinutes <= FOCUS_STEPS[0] : false);
@@ -347,7 +251,6 @@
       </svg>
       <span class="brand">Sidestep</span>
 
-      <!-- Scene theme picker: one pixel-token circle per season, top-right. -->
       <div class="themes">
         {#each THEME_KEYS as key}
           <button
@@ -363,16 +266,16 @@
       </div>
     </div>
 
-    <nav class="tabs" role="tablist">
-      <button class:active={tab === 'focus'} onclick={() => (tab = 'focus')}>Focus</button>
-      <button class:active={tab === 'blocked'} onclick={() => (tab = 'blocked')}>Blocked</button>
-      <button class:active={tab === 'companions'} onclick={() => (tab = 'companions')}>Companion</button>
-      <button class:active={tab === 'settings'} onclick={() => (tab = 'settings')}>Settings</button>
-    </nav>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected={tab === 'focus'} class:active={tab === 'focus'} onclick={() => (tab = 'focus')}>Focus</button>
+      <button role="tab" aria-selected={tab === 'blocked'} class:active={tab === 'blocked'} onclick={() => (tab = 'blocked')}>Blocked</button>
+      <button role="tab" aria-selected={tab === 'companions'} class:active={tab === 'companions'} onclick={() => (tab = 'companions')}>Companion</button>
+      <button role="tab" aria-selected={tab === 'settings'} class:active={tab === 'settings'} onclick={() => (tab = 'settings')}>Settings</button>
+    </div>
   </header>
 
   {#if t && s}
-    <!-- ===================== FOCUS PAGE ===================== -->
+
     {#if tab === 'focus'}
       {#if allowed.length}
         <div class="freedom-banner">
@@ -385,8 +288,6 @@
         </div>
       {/if}
 
-      <!-- The bunny's home. It hops through the run cycle while you're focusing
-           and sits still when idle/paused/on a break. -->
       <div class="habitat" style="--habitat-bg: {scene.bg}; --habitat-size: {scene.zoom ?? 'cover'}; --habitat-pos: {scene.pos ?? 'center'}; --grass-img: url({scene.grass}); --grass-tile: {scene.tile}px; --grass-bottom: {scene.grassBottom ?? '-3%'}; --grass-height: {scene.grassHeight ?? '55%'}">
         <div class="hud">
           <div class="time">{formatMs(remaining)}</div>
@@ -407,9 +308,6 @@
         <div class="ground" class:active={bunnyActive} class:running={bunnyRunning} style="animation-duration: {grassSeconds}s"></div>
       </div>
 
-      <!-- Two minimal bars under the scene: Time (session progress) over XP (focus
-           progress toward the next companion unlock). Label + value sit above a
-           hairline track, so the scene and pet stay the star. -->
       <div class="stat-bars">
         <div class="mbar">
           <div class="mbar-head">
@@ -438,10 +336,6 @@
         <button class="ghost" disabled={t.status === 'idle'} onclick={() => send('reset')}>Reset</button>
       </div>
 
-      <!-- Thought parking lot: jot a stray thought mid-session so it stops nagging
-           you, and it waits here until you have time for it. Also filled from the
-           redirect page. The card always shows — otherwise there'd be nowhere to
-           type your first thought. -->
       <div class="parked">
         <div class="parked-head">
           <span>Parked thoughts</span>
@@ -502,7 +396,6 @@
       </div>
     {/if}
 
-    <!-- ===================== BLOCKED PAGE ===================== -->
     {#if tab === 'blocked'}
       {#if allowed.length}
         <section class="card">
@@ -556,7 +449,6 @@
       </section>
     {/if}
 
-    <!-- ===================== COMPANION PAGE ===================== -->
     {#if tab === 'companions'}
       <section class="card">
         <div class="card-head">
@@ -573,8 +465,6 @@
           />
         </label>
 
-        <!-- Progress toward the next pet, so the 🔒 prices on the locked tiles
-             below read as "how much further", not just a number. -->
         <div class="mbar">
           <div class="mbar-head">
             <span class="mbar-lab">{xpLead}</span>
@@ -606,7 +496,6 @@
       </section>
     {/if}
 
-    <!-- ===================== SETTINGS PAGE ===================== -->
     {#if tab === 'settings'}
       <section class="card">
         <div class="card-head">
@@ -656,7 +545,7 @@
     flex-direction: column;
     gap: 12px;
   }
-  /* Header: brand + top tab bar */
+
   .top { display: flex; flex-direction: column; gap: 10px; }
   .brand-wrap { display: flex; align-items: center; gap: 7px; padding: 2px 2px 0; }
   .sprout { color: var(--accent); flex: none; transition: color 0.3s ease; }
@@ -668,16 +557,15 @@
     color: var(--ink);
   }
 
-  /* Scene theme picker — pixel-token circles pinned to the right of the brand. */
   .themes { display: flex; align-items: center; gap: 6px; margin-left: auto; padding-right: 2px; }
   .theme-dot {
     width: 17px;
     height: 17px;
     padding: 0;
-    border: 2px solid var(--outline); /* chunky pixel-art outline */
+    border: 2px solid var(--outline);
     border-radius: 50%;
     background: var(--dot);
-    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22); /* small offset, like a sticker */
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
     cursor: pointer;
     transition: transform 0.1s ease;
   }
@@ -701,8 +589,7 @@
     border-radius: 9px;
     padding: 7px 2px;
     font: inherit;
-    /* Four tabs share 344px, and "Companion" is the longest label — keep it on
-       one line and a touch smaller so none of them wrap. */
+
     font-size: 11.5px;
     white-space: nowrap;
     font-weight: 700;
@@ -717,11 +604,10 @@
     box-shadow: var(--shadow-sm);
   }
 
-  /* Cards (Lists / Blocked / Settings) */
   .card {
     background: var(--surface);
     border-radius: var(--r-lg);
-    /* Clean floating panel — soft shadow, no border (matches the preview). */
+
     box-shadow: var(--shadow);
     padding: 15px;
     transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease;
@@ -731,9 +617,6 @@
   }
 
   .card-head { display: flex; align-items: center; gap: 8px; }
-  /* A second group inside the same card — a divider keeps the panel continuous
-     instead of splitting it into two separate boxes. */
-  .card-sub { padding-top: 12px; border-top: 1px solid var(--line); }
   .card-label {
     font-family: 'Fredoka', 'Nunito', sans-serif;
     font-size: 13px;
@@ -741,40 +624,21 @@
     letter-spacing: 0.3px;
     color: var(--accent-deep);
   }
-  .topic-pill {
-    margin-left: auto;
-    font-size: 11.5px;
-    font-weight: 700;
-    color: var(--accent-deep);
-    background: var(--accent-tint);
-    padding: 3px 10px;
-    border-radius: 999px;
-    max-width: 60%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
 
-  /* The bunny habitat — the hero of the Focus page. A soft meadow: cream "sky"
-     fading to a tinted "grass" band at the bottom. The clock floats in the sky;
-     the bunny (placeholder for now) sits on the grass. */
   .habitat {
     position: relative;
     width: 100%;
     aspect-ratio: 4 / 5;
     border-radius: var(--r-lg);
     border: 1.5px solid var(--edge);
-    /* Scene backdrop — swapped per theme via --habitat-bg; --habitat-size zooms a
-       theme past cover (rainy) and --habitat-pos nudges its framing (autumn).
-       Falls back to the meadow, centred at cover. */
+
     background: var(--habitat-bg, url(/scene/background.png)) var(--habitat-pos, center) / var(--habitat-size, cover) no-repeat;
-    /* A soft inner vignette frames the scene like a window into the pet's world,
-       plus the panel's outer drop so it sits above the page. */
+
     box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.18), var(--shadow);
     overflow: hidden;
     transition: background 0.35s ease, border-color 0.35s ease;
   }
-  /* Timer "heads-up display" floating near the top of the habitat. */
+
   .hud { position: absolute; top: 22px; left: 0; right: 0; text-align: center; z-index: 1; }
   .time {
     font-family: 'Fredoka', 'Nunito', sans-serif;
@@ -784,11 +648,11 @@
     line-height: 1;
     letter-spacing: 1px;
     color: var(--ink);
-    /* Depth so the readout stays legible floating over the scene sky. */
+
     text-shadow: 0 2px 3px rgba(0, 0, 0, 0.14);
   }
   .status { margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
-  /* "Round 2 of 4" — a run with an end in sight is easier to commit to. */
+
   .round {
     margin-top: 5px;
     display: inline-block;
@@ -801,9 +665,6 @@
     padding: 2px 9px;
   }
 
-  /* The bunny, standing on the grass. Its feet rest on the grass line; the baked
-     hop in the frames lifts it off and back as the run cycle plays. `bottom` is a
-     percentage so it tracks the square habitat at any popup size. */
   .bunny-slot {
     position: absolute;
     left: 0;
@@ -814,36 +675,24 @@
     justify-content: center;
   }
   .bunny-sprite {
-    /* Width is set inline, per companion (bunny vs fox read at different sizes). */
     height: auto;
     user-select: none;
     -webkit-user-drag: none;
   }
 
-  /* The grass band. */
   .ground {
     position: absolute;
     left: 0;
     right: 0;
     bottom: var(--grass-bottom, -3%);
     height: var(--grass-height, 55%);
-    /* Grass image + its exact tile width both come from the active theme
-       (--grass-img / --grass-tile), set inline on .habitat. Each strip's ends are
-       cross-faded over a plain-grass patch so the scroll seam is invisible, and
-       the scroll distance below matches --grass-tile so the loop lines up. */
+
     background-image: var(--grass-img, url(/scene/grass.png));
     background-repeat: repeat-x;
     background-size: var(--grass-tile, 1571px) 100%;
     background-position: left top;
   }
-  /* While the companion runs it faces left and stays put, so scroll the meadow
-     to the RIGHT to sell forward motion. One full tile (1571px) takes 9.2s — a
-     run, not a slide. steps(105) hops the grass in discrete ~15px jumps (~88ms,
-     about twice the run frame rate) so it shares the pixel-art look without
-     stuttering. The animation is attached whenever the focus session is `active`
-     (running OR paused) and defaults to paused; adding `running` plays it. That
-     way a pause freezes the grass in place and resume continues from there,
-     instead of snapping back to the start. */
+
   .ground.active {
     animation: grass-scroll 9.2s steps(105) infinite;
     animation-play-state: paused;
@@ -859,7 +708,6 @@
     .ground.active { animation: none; }
   }
 
-  /* Parked thoughts — the "for later" list, filled from the redirect page */
   .parked {
     background: var(--surface);
     border-radius: var(--r-lg);
@@ -879,10 +727,7 @@
     font-weight: 700;
     color: var(--ink-soft);
   }
-  /* The + that reveals the jot box. Rotates into an × while the box is open.
-     `font: inherit` matters: a <button> does NOT inherit the page font on its
-     own, so without it the + would render in the browser's default face at a
-     different weight from the "Parked thoughts" label beside it. */
+
   .add {
     flex: none;
     border: 0;
@@ -929,9 +774,6 @@
   .parked-list li.done .parked-text { color: var(--ink-faint); text-decoration: line-through; }
   .parked-empty { margin: 0; padding-left: 2px; font-size: 12px; font-weight: 600; color: var(--ink-faint); }
 
-  /* "Remove" — small red text at the right of each thought. This is its own class
-     on purpose: the shared `.x` button is also used by the Lists and Blocked tabs,
-     so restyling `.x` would have changed those too. */
   .remove {
     flex: none;
     border: 0;
@@ -947,7 +789,6 @@
   }
   .remove:hover { opacity: 1; text-decoration: underline; }
 
-  /* The inline "are you sure?" that replaces Remove once it's clicked. */
   .confirm { flex: none; display: flex; align-items: center; gap: 7px; }
   .confirm-q { font-size: 11px; font-weight: 700; color: var(--ink-soft); }
   .confirm-yes,
@@ -965,9 +806,6 @@
   .confirm-yes:hover,
   .confirm-no:hover { text-decoration: underline; }
 
-  /* The two stat bars below the scene — minimal: an uppercase label and its value
-     on one line, over a hairline track. Understated so the scene and pet stay the
-     star; only the fill colour differs (blue Time, gold XP). */
   .stat-bars {
     display: flex;
     flex-direction: column;
@@ -1002,7 +840,7 @@
     height: 12px;
     border-radius: 999px;
     background: var(--surface-2);
-    border: 2px solid var(--outline); /* same chunky outline as the theme dots */
+    border: 2px solid var(--outline);
     box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
     overflow: hidden;
     transition: background-color 0.35s ease, border-color 0.35s ease;
@@ -1010,7 +848,7 @@
   .mbar-fill {
     height: 100%;
     border-radius: 999px;
-    /* Glossy game-bar: a bright top sheen and a shadow at the base. */
+
     box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.32), inset 0 -3px 4px rgba(0, 0, 0, 0.16);
     transition: width 0.3s ease, background-color 0.35s ease;
   }
@@ -1020,7 +858,6 @@
     .mbar-fill { transition: none; }
   }
 
-  /* Controls */
   .controls { display: flex; gap: 9px; }
   .controls button {
     flex: 1;
@@ -1031,18 +868,15 @@
     font-weight: 700;
     cursor: pointer;
     border: 2px solid transparent;
-    /* Cozy pressable buttons: a solid bottom edge makes them sit up off the page
-       like a picture-book sticker, and pressing compresses that edge to nothing. */
+
     transition: transform 0.06s ease, box-shadow 0.06s ease, filter 0.15s ease, background 0.15s ease;
   }
   .primary {
     background: var(--accent);
     color: var(--on-accent, #fff);
-    /* The bottom lip is the accent darkened, so it reads as a shadow in every
-       theme (independent of --accent-deep, which flips light in dark mode). */
+
     border-color: color-mix(in srgb, var(--accent) 58%, #000);
-    /* Solid bottom lip + the theme glow (transparent in light themes, a luminous
-       halo in the dark rainy night). */
+
     box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 58%, #000), 0 0 16px var(--glow, transparent);
   }
   .primary:hover:not(:disabled) { filter: brightness(1.05); }
@@ -1057,7 +891,6 @@
   .ghost:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--edge); }
   .controls button:disabled { opacity: 0.5; cursor: default; box-shadow: none; transform: none; }
 
-  /* Inputs */
   .row { display: flex; gap: 7px; }
   .inp {
     flex: 1;
@@ -1078,7 +911,6 @@
     box-shadow: 0 0 0 3px var(--accent-tint);
   }
   .inp::placeholder { color: var(--ink-faint); }
-  .full { width: 100%; }
 
   .mini {
     border: 0;
@@ -1109,7 +941,6 @@
   .soft-btn:hover { filter: brightness(0.97); }
   .plus { font-weight: 700; margin-right: 2px; }
 
-  /* Site chips */
   .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {
     display: flex; align-items: center; gap: 3px;
@@ -1130,7 +961,6 @@
 
   .empty { font-size: 12.5px; color: var(--ink-faint); padding: 2px 0; }
 
-  /* Settings */
   .setting { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .setting-name { font-size: 13.5px; font-weight: 700; color: var(--ink); display: flex; flex-direction: column; gap: 1px; }
   .setting-note { font-size: 10.5px; font-weight: 600; color: var(--ink-faint); }
@@ -1155,8 +985,6 @@
   .stepper button:hover:not(:disabled) { filter: brightness(0.97); }
   .stepper button:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
 
-  /* On/off switch for "Companion on web pages". A checkbox styled as a sliding
-     pill: track goes sage-green when on, grey when off, with a knob that slides. */
   .toggle-row { cursor: pointer; }
   .toggle {
     appearance: none; -webkit-appearance: none; margin: 0; flex: none;
@@ -1181,10 +1009,7 @@
   }
   .num small { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); margin-left: 2px; }
   .hint { margin: 2px 0 0; font-size: 11.5px; color: var(--ink-faint); }
-  .hint.no-top { margin: -3px 0 0; line-height: 1.45; }
 
-  /* Companion picker — one tappable tile per animal, its sit pose as the icon. */
-  /* Three tiles per row; a 4th (and beyond) wraps to the next row, left-aligned. */
   .pets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .pet {
     display: flex;
@@ -1204,7 +1029,7 @@
     border-color: var(--accent);
     background: var(--accent-tint);
   }
-  /* A pet you haven't earned yet: dimmed, not clickable, with its XP price shown. */
+
   .pet.locked { cursor: not-allowed; opacity: 0.55; filter: grayscale(0.9); }
   .pet.locked:hover { border-color: var(--edge); }
   .pet.locked:active { transform: none; }
@@ -1213,11 +1038,10 @@
     width: 56px;
     height: 56px;
     object-fit: contain;
-    image-rendering: pixelated; /* keep the pixel-art crisp when scaled down */
+    image-rendering: pixelated;
   }
   .pet span { font-size: 12.5px; font-weight: 700; color: var(--ink); }
 
-  /* Freedom-window status (banner on Focus, list on Blocked) */
   .freedom-banner {
     background: var(--accent-tint);
     border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);

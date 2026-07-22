@@ -1,14 +1,3 @@
-// The floating on-page companion.
-//
-// While a focus session is running, this drops a small draggable pet onto the
-// web page you're viewing — a "body double" that sits with you as you work. It
-// only lives inside web pages (that's the limit of a browser extension: it can't
-// paint over other desktop apps or special chrome:// pages), and each tab shows
-// its own copy at the shared, remembered position.
-//
-// The whole widget lives in a Shadow DOM so the page's CSS can't touch it and our
-// styles can't leak onto the page. It reads the timer, the chosen companion, and
-// the saved position straight from storage, and re-renders whenever any change.
 import { COMPANIONS, DEFAULT_COMPANION } from '@/lib/companions';
 import { settings, timer, overlay } from '@/lib/storage';
 
@@ -18,9 +7,8 @@ export default defineContentScript({
   matches: ['<all_urls>'],
   runAt: 'document_idle',
   main() {
-    if (window.top !== window) return; // top-level page only, never inside iframes
+    if (window.top !== window) return;
 
-    // --- the widget, isolated in a shadow root ---
     const host = document.createElement('div');
     host.style.cssText =
       'position:fixed; z-index:2147483647; left:0; top:0; margin:0; padding:0;' +
@@ -35,7 +23,6 @@ export default defineContentScript({
     shadow.appendChild(img);
     (document.documentElement || document.body).appendChild(host);
 
-    // --- companion sprite data ---
     let sprite: any = COMPANIONS[DEFAULT_COMPANION];
     let runURLs: string[] = [];
     let sitURL = '';
@@ -44,24 +31,20 @@ export default defineContentScript({
       sprite = COMPANIONS[key] ?? COMPANIONS[DEFAULT_COMPANION];
       runURLs = sprite.run.map(url);
       sitURL = url(sprite.sit);
-      overlayW = Math.round(sprite.width * 0.45); // ~half the popup size
+      overlayW = Math.round(sprite.width * 0.45);
       host.style.width = overlayW + 'px';
-      for (const u of [...runURLs, sitURL]) new Image().src = u; // warm the cache
+      for (const u of [...runURLs, sitURL]) new Image().src = u;
     }
 
-    // --- state + animation ---
-    let state = { status: 'idle', mode: 'focus' };
-    let showOnPage = true; // the "Companion on web pages" setting — hides the pet when off
+    let status = 'idle';
+    let showOnPage = true;
     let frame = 0;
     let anim: ReturnType<typeof setInterval> | undefined;
     const stopAnim = () => { if (anim) { clearInterval(anim); anim = undefined; } };
 
     function render() {
-      // Show the pet whenever a session is on — focus OR break — so it keeps you
-      // company through the whole cycle, not only while focusing. It runs when the
-      // timer is ticking and sits when paused.
-      const running = state.status === 'running';
-      const active = showOnPage && (state.status === 'running' || state.status === 'paused');
+      const running = status === 'running';
+      const active = showOnPage && (running || status === 'paused');
       if (!active) { host.style.display = 'none'; stopAnim(); return; }
       host.style.display = 'block';
       if (running) {
@@ -73,11 +56,10 @@ export default defineContentScript({
         }
       } else {
         stopAnim();
-        img.src = sitURL; // paused: the pet sits and waits
+        img.src = sitURL;
       }
     }
 
-    // --- placement ---
     function place(x: number, y: number) {
       const w = host.offsetWidth || overlayW;
       const h = host.offsetHeight || overlayW;
@@ -88,7 +70,6 @@ export default defineContentScript({
     }
     const defaultPos = () => ({ x: window.innerWidth - overlayW - 24, y: window.innerHeight - overlayW - 24 });
 
-    // --- drag to reposition (saved so it persists and syncs across tabs) ---
     let dragging = false, moved = false, offX = 0, offY = 0;
     host.addEventListener('pointerdown', (e) => {
       dragging = true; moved = false;
@@ -118,19 +99,18 @@ export default defineContentScript({
       place(r.left, r.top);
     });
 
-    // --- wire everything to storage ---
     (async () => {
       const [s, t, pos] = await Promise.all([settings.getValue(), timer.getValue(), overlay.getValue()]);
       showOnPage = s?.showOnPage ?? true;
       loadSprite(s?.companion ?? DEFAULT_COMPANION);
       const p = pos && pos.x != null ? pos : defaultPos();
       place(p.x, p.y);
-      state = { status: t?.status ?? 'idle', mode: t?.mode ?? 'focus' };
+      status = t?.status ?? 'idle';
       render();
     })();
 
     settings.watch((s) => { showOnPage = s?.showOnPage ?? true; loadSprite(s?.companion ?? DEFAULT_COMPANION); render(); });
-    timer.watch((t) => { state = { status: t?.status ?? 'idle', mode: t?.mode ?? 'focus' }; render(); });
+    timer.watch((t) => { status = t?.status ?? 'idle'; render(); });
     overlay.watch((pos) => { if (pos && pos.x != null && !dragging) place(pos.x, pos.y); });
   },
 });

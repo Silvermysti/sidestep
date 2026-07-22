@@ -1,5 +1,3 @@
-/* Full-page styles for the nudge (redirect landing) page. Shares the popup's
-   warm, soft look so the whole product feels like one calm place. */
 @font-face { font-family: 'Nunito'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/nunito-400.woff2') format('woff2'); }
 @font-face { font-family: 'Nunito'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/nunito-600.woff2') format('woff2'); }
 @font-face { font-family: 'Nunito'; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/nunito-700.woff2') format('woff2'); }
@@ -8,29 +6,22 @@
 @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/fredoka-600.woff2') format('woff2'); }
 
 :root {
-  /* Night palette — the redirect page is a calm, sleepy night sky so being
-     stopped feels restful, not punishing. Colours are sampled from the pixel-art
-     night background so the card blends into the scene. Redefining these shared
-     variables flips the whole card (and everything in it) to night mode at once. */
   --bg: #211C3D;
-  --surface: rgba(59, 51, 104, 0.82);  /* the card — a translucent night purple */
-  --surface-2: #4A4080;                /* insets: park box, link rows */
-  --surface-3: #554A90;
+  --surface: rgba(59, 51, 104, 0.82);
+  --surface-2: #4A4080;
   --line: rgba(205, 196, 247, 0.16);
   --ink: #ECE9FF;
   --ink-soft: #BDB4E6;
   --ink-faint: #8A82B0;
 
-  --accent: #8C81CC;        /* periwinkle — the light clouds / moonlight */
-  --accent-deep: #CFC6F7;   /* lighter lavender, for text on tinted surfaces */
+  --accent: #8C81CC;
+  --accent-deep: #CFC6F7;
   --accent-tint: rgba(140, 129, 204, 0.22);
 
-  --shadow-sm: 0 1px 3px rgba(10, 6, 28, 0.4);
   --shadow: 0 20px 60px rgba(10, 6, 28, 0.55), 0 3px 9px rgba(10, 6, 28, 0.4);
 
   --r-lg: 22px;
   --r: 14px;
-  --r-sm: 10px;
 
   font-family: 'Nunito', ui-rounded, system-ui, -apple-system, sans-serif;
   line-height: 1.5;
@@ -44,13 +35,11 @@ html, body { margin: 0; min-height: 100vh; }
 
 body {
   color: var(--ink);
-  /* The pixel-art night sky WITHOUT clouds — kept crisp (pixelated) and covering
-     the viewport. Fixed so it stays put if the page scrolls. The clouds are a
-     separate drifting layer (see .clouds in the page). Dark fallback behind it. */
+
   background: var(--bg) url('/scene/sky.png') center / cover no-repeat fixed;
   image-rendering: pixelated;
   display: flex;
-  align-items: flex-start;      /* room above the card for the sleeping bunny */
+  align-items: flex-start;
   justify-content: center;
-  padding: 168px 24px 40px;     /* card sits lower, leaving sky for the big bunny */
+  padding: 168px 24px 40px;
 }

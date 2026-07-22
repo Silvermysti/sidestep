@@ -1,5 +1,3 @@
-/* Bundled rounded fonts (local, no network at runtime). Fredoka = friendly
-   display for the clock + wordmark; Nunito = warm, readable body/UI. */
 @font-face { font-family: 'Nunito'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/nunito-400.woff2') format('woff2'); }
 @font-face { font-family: 'Nunito'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/nunito-600.woff2') format('woff2'); }
 @font-face { font-family: 'Nunito'; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/nunito-700.woff2') format('woff2'); }
@@ -8,15 +6,10 @@
 @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/fredoka-600.woff2') format('woff2'); }
 
 :root {
-  /* ── Shape & type tokens — shared by every theme ─────────────────────────
-     Only COLOUR changes between the three scenes; corners, shadows, and fonts
-     stay constant so the popup keeps one calm, cohesive shape. */
-  /* Soft, neutral float — matches the preview's clean shadows (no hard step). */
   --shadow-sm: 0 2px 6px rgba(38, 34, 30, 0.08);
   --shadow: 0 14px 34px rgba(38, 34, 30, 0.13);
   --r-lg: 20px;
   --r: 14px;
-  --r-sm: 11px;
 
   font-family: 'Nunito', ui-rounded, system-ui, -apple-system, sans-serif;
   line-height: 1.45;
@@ -24,104 +17,80 @@
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 
-  /* ── Default palette = Meadow · LIGHT (bright fresh garden) ───────────────
-     The whole popup recolours with the chosen scene: App.svelte tags <html>
-     with data-theme, and every component reads these tokens. The three themes
-     climb a lightness ladder — Meadow light, Autumn medium, Rainy dark — and
-     each keeps strong LAYER contrast (page darker than panels, panels lighter
-     than the controls inside them) so every element reads on its own, like a
-     game HUD. `--accent-deep` is "readable accent text"; `--edge` is the drawn
-     panel border. The accent also warms a touch on breaks (data-mode). */
-  /* SOFT POP — soft, aesthetic pastels with real contrast BETWEEN elements: the
-     button (--accent), the two bars (--bar-time / --bar-xp) and the tags (--chip)
-     each carry a different soft hue. Buttons use a soft pastel fill with a deep
-     same-tone label (--on-accent) so they stay soft AND readable, instead of
-     white-on-pastel. Meadow = soft sage & peach. */
   --bg: #EFF3EC;
-  --bg-hi: #F7FAF3;
   --surface: #FFFFFF;
   --surface-2: #EBF1E6;
-  --surface-3: #E2EADB;
   --line: #E1E9DB;
   --edge: #D6E2CF;
   --outline: #33402C;
-  --panel-hi: rgba(255, 255, 255, 0.9);
   --glow: transparent;
   --ink: #3C4A3B;
   --ink-soft: #7C8779;
   --ink-faint: #A9B2A2;
-  --accent: #F0A88F;        /* soft peach button */
-  --on-accent: #7E3A28;     /* deep tonal label ON the button */
-  --accent-deep: #C86A4E;   /* accent text / section labels / active tab */
+  --accent: #F0A88F;
+  --on-accent: #7E3A28;
+  --accent-deep: #C86A4E;
   --accent-tint: #FBE7DE;
-  --bar-time: #8FBFDD;      /* powder blue */
-  --bar-xp: #8CC98C;        /* soft sage — XP is growth */
-  --chip: #F4DA95;          /* butter tag */
+  --bar-time: #8FBFDD;
+  --bar-xp: #8CC98C;
+  --chip: #F4DA95;
   --chip-ink: #6F5620;
 }
-:root[data-mode="break"] {   /* Meadow break — soft honey rest */
+:root[data-mode="break"] {
   --accent: #EFC98C;
   --on-accent: #6E4E17;
   --accent-deep: #B0803A;
   --accent-tint: #F7ECD6;
 }
 
-/* ── Autumn — Apricot: soft peachy-cream; terracotta / teal / gold / rose ──── */
 :root[data-theme="autumn"] {
   --bg: #F8E7CE;
-  --bg-hi: #FDF3E2;
   --surface: #FFFCF6;
   --surface-2: #F4DEC1;
-  --surface-3: #EDD4B2;
   --line: #EEDCC2;
   --edge: #E3CBA9;
   --outline: #4A3320;
-  --panel-hi: rgba(255, 252, 246, 0.9);
   --glow: transparent;
   --ink: #4A3A2C;
   --ink-soft: #8A7560;
   --ink-faint: #B39C82;
-  --accent: #E7A184;        /* soft terracotta */
+  --accent: #E7A184;
   --on-accent: #7C3A26;
   --accent-deep: #B85E3E;
   --accent-tint: #F6DFCF;
-  --bar-time: #8FC0B6;      /* dusty teal */
-  --bar-xp: #F0C079;        /* soft gold */
-  --chip: #E4AAB1;          /* rose tag */
+  --bar-time: #8FC0B6;
+  --bar-xp: #F0C079;
+  --chip: #E4AAB1;
   --chip-ink: #7E3F48;
 }
-:root[data-theme="autumn"][data-mode="break"] {   /* dusty rose rest */
+:root[data-theme="autumn"][data-mode="break"] {
   --accent: #D99A8E;
   --on-accent: #6E362B;
   --accent-deep: #9E5A4E;
   --accent-tint: #F1DACF;
 }
 
-/* ── Rainy — soft periwinkle night (dark); aqua / peach bars, lilac tag ────── */
 :root[data-theme="rainy"] {
   --bg: #272B3B;
-  --bg-hi: #313650;
   --surface: #323752;
   --surface-2: #272C40;
-  --surface-3: #3B4162;
   --line: #3E4568;
   --edge: #4C5378;
   --outline: #171A28;
-  --panel-hi: rgba(160, 170, 220, 0.12);
   --glow: rgba(157, 166, 238, 0.40);
   --ink: #E7E9F2;
   --ink-soft: #A8ABC0;
   --ink-faint: #74789A;
-  --accent: #9DA6EE;        /* soft periwinkle button */
-  --on-accent: #2A2E52;     /* deep label on periwinkle */
-  --accent-deep: #B4BBF5;   /* light on dark — labels/text */
+  --accent: #9DA6EE;
+  --on-accent: #2A2E52;
+  --accent-deep: #B4BBF5;
   --accent-tint: #333A5C;
-  --bar-time: #84C6D9;      /* soft aqua */
-  --bar-xp: #F0B58A;        /* soft peach — a warm light in the rain */
-  --chip: #D3A2CE;          /* lilac tag */
+  --bar-time: #84C6D9;
+  --bar-xp: #F0B58A;
+  --chip: #D3A2CE;
   --chip-ink: #46284A;
 }
-:root[data-theme="rainy"][data-mode="break"] {   /* soft teal rest */
+:root[data-theme="rainy"][data-mode="break"] {
   --accent: #8FC7C0;
   --on-accent: #234440;
   --accent-deep: #A9DAD3;
@@ -133,8 +102,6 @@
 html, body { margin: 0; }
 
 body {
-  /* A Chrome popup sizes to its content; this sets a comfortable width. The
-     radial lift adds a soft glow, tinted by the active theme's --bg-hi. */
   width: 344px;
   color: var(--ink);
   background: var(--bg);

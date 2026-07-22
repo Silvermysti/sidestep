@@ -1,22 +1,3 @@
-// The companion pets, in one place, shared by the popup (which animates the
-// run/idle poses in the habitat) and the block page (which shows the sleeping
-// pose). Keeping the data here means both pages agree on what "fox" or "bunny"
-// means, and adding a new animal later is a single entry.
-//
-// Each companion:
-//   label   — name shown in the settings picker
-//   run     — run frames, in play order
-//   sit     — idle/sitting pose, shown when no session is running
-//   sleep   — pose shown resting on the block page
-//   icon    — square, tight-cropped sit pose used for the picker button
-//   frameMs — how long each run frame shows (its run speed)
-//   width   — how wide to draw it in the popup habitat (px)
-//   sleepW  — how wide to draw the sleeping pose on the block page (px)
-//   grassSpeed — how fast the grass scrolls under this pet, relative to normal
-//                (1 = normal, 0.95 = 5% slower). Optional; defaults to 1.
-//   unlockAt — how much XP (= focused minutes) you need before this pet is
-//              available. Bunny is 0 (free from the start and can never be lost);
-//              fox and cat are earned, and re-lock if XP drains back below these.
 export const COMPANIONS = {
   bunny: {
     label: 'Bunny',
@@ -30,7 +11,7 @@ export const COMPANIONS = {
     frameMs: 119,
     width: 190,
     sleepW: 236,
-    unlockAt: 0, // free base — always available, never re-locks
+    unlockAt: 0,
   },
   fox: {
     label: 'Fox',
@@ -44,7 +25,7 @@ export const COMPANIONS = {
     frameMs: 119,
     width: 260,
     sleepW: 268,
-    unlockAt: 60, // ~1 hour of focus
+    unlockAt: 60,
   },
   cat: {
     label: 'Cat',
@@ -58,20 +39,14 @@ export const COMPANIONS = {
     frameMs: 119,
     width: 270,
     sleepW: 250,
-    grassSpeed: 0.95, // cat strolls a touch slower — grass scrolls 5% slower
-    unlockAt: 180, // ~3 hours of focus
+    grassSpeed: 0.95,
+    unlockAt: 180,
   },
 };
 
-// The order the picker shows them in, and the default for a fresh install / any
-// saved settings that predate the companion choice.
 export const COMPANION_KEYS = Object.keys(COMPANIONS);
 export const DEFAULT_COMPANION = 'bunny';
 
-// The unlock rule, in one place so the popup (which greys out locked pets) and the
-// background (which unlocks/re-locks as XP moves) always agree.
-//   isUnlocked  — is this pet available at the given XP?
-//   unlockedKeys — every available pet, in picker order (bunny is always present).
 export function isUnlocked(key, xp) {
   return (xp ?? 0) >= (COMPANIONS[key]?.unlockAt ?? 0);
 }

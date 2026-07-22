@@ -1,11 +1,4 @@
 <script>
-  // This page is what a redirected tab shows. The background tells us in the URL
-  // which site we stepped past (`from`) and the exact page they were heading to
-  // (`orig`), so "allow + go" can hand them straight back to it.
-  //
-  // It's a pause, not a wall: jot down whatever pulled you here, see the thoughts
-  // you've already parked, see the sites you're protecting, and — if you genuinely
-  // need this one — open a freedom window for it.
   import { onMount } from 'svelte';
   import { browser } from '#imports';
   import { parkingLot, settings } from '@/lib/storage';
@@ -14,17 +7,14 @@
 
   const params = new URLSearchParams(location.search);
   const from = params.get('from') ?? 'that site';
-  const orig = params.get('orig'); // the exact page the user was heading to
+  const orig = params.get('orig');
 
-  // The thought parking lot: whatever pulled them here, jotted down so it stops
-  // nagging. `parked` briefly confirms the save.
   let parkDraft = $state('');
   let parked = $state(false);
-  let thoughts = $state([]); // [{ text, savedAt, done }] — newest first
-  let blockedSites = $state([]); // the sites being protected this session
+  let thoughts = $state([]);
+  let blockedSites = $state([]);
   let loaded = $state(false);
 
-  // Which pet naps on this page follows the companion chosen in settings.
   let companionKey = $state(DEFAULT_COMPANION);
   let pet = $derived(COMPANIONS[companionKey]);
 
@@ -36,16 +26,13 @@
     loaded = true;
   });
 
-  // Never trust a corrupted value — the list must be safe to loop over.
   async function readThoughts() {
     const stored = await parkingLot.getValue();
     return Array.isArray(stored) ? stored : [];
   }
 
-  // Save a stray thought, then clear the box, flash a note, and refresh the list
-  // below so the thought they just typed appears straight away.
   async function park() {
-    if (!(await parkThought(parkDraft))) return; // empty box — nothing to save
+    if (!(await parkThought(parkDraft))) return;
     parkDraft = '';
     thoughts = await readThoughts();
     parked = true;
@@ -53,26 +40,21 @@
   }
 
   function open(u) {
-    if (u) location.replace(u); // replace() so Back doesn't loop us here
+    if (u) location.replace(u);
   }
 
-  // Freedom window: grant THIS site a pass, then go to the page they wanted.
-  // `minutes` is a number or the string 'forever'.
   async function allow(minutes) {
     await browser.runtime.sendMessage({ action: 'allowSite', host: from, minutes });
     open(orig || `https://${from}`);
   }
 </script>
 
-<!-- Clouds drift slowly leftward across the night sky, behind everything. The
-     cloud strip tiles seamlessly, so repeating it and sliding by one tile-width
-     loops forever with no visible seam. -->
 <div class="clouds" aria-hidden="true"></div>
 
 <main>
   <div class="sleeper-wrap" style="width:{pet.sleepW}px">
     <img class="sleeper" src={pet.sleep} alt="" />
-    <!-- Sleepy pixel "Z"s: they drift up and fade one after another, on a loop. -->
+
     <img class="z z1" src="/scene/z.png" alt="" />
     <img class="z z2" src="/scene/z.png" alt="" />
     <img class="z z3" src="/scene/z.png" alt="" />
@@ -109,8 +91,7 @@
     </div>
 
     {#if loaded}
-      <!-- Everything already parked, so the thought that just pulled them here
-           lands among the others instead of vanishing into the popup. -->
+
       <section class="sec">
         <h2 class="sec-title">Parked thoughts</h2>
         {#if thoughts.length}
@@ -127,8 +108,6 @@
         {/if}
       </section>
 
-      <!-- The sites being held back right now; the one they just reached for is
-           marked, so it's clear which of them stopped this tab. -->
       <section class="sec">
         <h2 class="sec-title">Sites you're protecting</h2>
         {#if blockedSites.length}
@@ -160,47 +139,33 @@
   main {
     width: 100%;
     max-width: 520px;
-    position: relative; /* anchor for the sleeping bunny resting on the card */
+    position: relative;
   }
 
-  /* The drifting cloud band. Fixed to the viewport, sitting in the upper sky
-     behind the card (negative z-index keeps it above the sky background but
-     below all content, so the card's frosted blur catches it too). It repeats
-     horizontally and slides left by exactly one tile-width on an endless loop —
-     because the strip is horizontally continuous, the wrap is seamless. */
   .clouds {
     position: fixed;
     top: 40px;
     left: 0;
     width: 100%;
-    /* The cloud strip is scaled to nearly fill the sky's height, but stops short
-       of the bottom to leave breathing room. The region is the sky's height
-       (50.4vw: sky is 1767x890 → 890/1767 of its 100vw width). We reserve 7% of
-       that height (3.528vw) as bottom padding, so the clouds fill the top
-       50.4 − 3.528 = 46.872vw. The tile is 2172x724 (exactly 3x wider than
-       tall), so at that height it is 46.872 × 3 = 140.62vw wide. Anchored to the
-       top (default position), the reserved space falls at the bottom. */
+
     height: 50.4vw;
     z-index: -1;
     pointer-events: none;
     background: url('/scene/clouds.png') repeat-x;
-    background-size: 140.62vw 46.872vw;  /* one tile, leaving 7% bottom padding */
-    image-rendering: pixelated;          /* keep the pixel-art edges crisp */
+    background-size: 140.62vw 46.872vw;
+    image-rendering: pixelated;
     opacity: 0.92;
-    animation: cloud-drift 233s linear infinite;  /* slow, gentle drift */
+    animation: cloud-drift 233s linear infinite;
   }
   @keyframes cloud-drift {
     from { background-position-x: 0; }
-    to   { background-position-x: -140.62vw; }  /* one full tile → seamless loop */
+    to   { background-position-x: -140.62vw; }
   }
-  /* Respect users who prefer no motion: park the clouds in place. */
+
   @media (prefers-reduced-motion: reduce) {
     .clouds { animation: none; }
   }
 
-  /* The sleeping companion lies on top of the card's front edge — most of it
-     above the card, its body dipping onto the top so it reads as resting there.
-     Width is set inline, per companion (see lib/companions.js). */
   .sleeper-wrap {
     position: absolute;
     top: 0;
@@ -216,12 +181,10 @@
     filter: drop-shadow(0 6px 10px rgba(20, 15, 40, 0.5));
   }
 
-  /* The sleepy Z's rise up from above the bunny's head and fade, staggered so
-     they appear one by one. A soft moonlit lavender with a faint glow. */
   .z {
     position: absolute;
-    image-rendering: pixelated;                                 /* crisp pixel edges */
-    filter: drop-shadow(0 0 5px rgba(190, 178, 240, 0.55));     /* soft moonlit glow */
+    image-rendering: pixelated;
+    filter: drop-shadow(0 0 5px rgba(190, 178, 240, 0.55));
     opacity: 0;
     animation: zrise 3.9s ease-in-out infinite;
   }
@@ -241,12 +204,11 @@
     border: 1px solid var(--line);
     border-radius: var(--r-lg);
     box-shadow: var(--shadow);
-    backdrop-filter: blur(5px); /* frosts the night sky behind the card */
+    backdrop-filter: blur(5px);
     padding: 34px 30px 24px;
     text-align: center;
   }
 
-  /* Brand mark — same sprout + wordmark as the popup */
   .brand-wrap {
     display: flex;
     align-items: center;
@@ -287,7 +249,6 @@
     font-size: 15px;
   }
 
-  /* Thought parking lot — dump the impulse that brought you here */
   .park {
     display: flex;
     flex-direction: column;
@@ -301,8 +262,7 @@
   }
   .park-q { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
   .park-row { display: flex; gap: 7px; }
-  /* The jot field is a solid light panel with dark text — a clear, familiar place
-     to type, standing out against the dark night card. */
+
   .park-inp {
     flex: 1;
     min-width: 0;
@@ -336,8 +296,6 @@
   .park-btn:hover { filter: brightness(0.97); }
   .park-done { font-size: 11.5px; font-weight: 700; color: var(--accent-deep); }
 
-  /* Sections below the jot box: parked thoughts, then the protected sites. The
-     card is a plain block, so each section carries its own top spacing. */
   .sec { margin-top: 22px; text-align: left; display: flex; flex-direction: column; gap: 9px; }
   .sec .empty { margin-top: 0; }
   .sec-title {
@@ -350,8 +308,6 @@
     border-bottom: 1.5px solid var(--line);
   }
 
-  /* Parked thoughts — read-only here; you tick them off back in the popup. The
-     list scrolls once it gets long so the card never runs off the screen. */
   .thoughts {
     list-style: none;
     margin: 0;
@@ -387,12 +343,11 @@
     transform: translateY(-1px);
   }
   .t-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-  /* Already handled — kept visible but clearly settled. */
+
   .thought.done { opacity: 0.55; }
   .thought.done .t-text { text-decoration: line-through; }
   .thought.done .t-dot { background: var(--ink-faint); }
 
-  /* The protected sites, as ovals — the same shape as the chips in the popup. */
   .ovals { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 7px; }
   .oval {
     font-size: 12.5px;
@@ -403,7 +358,7 @@
     border-radius: 999px;
     padding: 5px 13px;
   }
-  /* The one that stopped this tab. */
+
   .oval.current {
     background: var(--accent-tint);
     border-color: var(--accent);
@@ -421,7 +376,6 @@
     background: var(--surface-2);
   }
 
-  /* Freedom-window escape hatch */
   .allow {
     margin: 24px 0 0;
     padding-top: 18px;
