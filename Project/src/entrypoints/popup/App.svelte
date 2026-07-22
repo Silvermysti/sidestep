@@ -132,7 +132,7 @@
   const THEMES = {
     meadow: { label: 'Meadow', bg: 'url(/scene/background.png)', grass: '/scene/grass.png', tile: 1571, dot: '#7fb43f' },
     autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 1459, dot: '#d5852f', pos: 'center 100%', zoom: '125%' },
-    rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1743, dot: '#6d88a8', zoom: '133%', pos: 'center 75%', grassBottom: '0%', grassHeight: '62%', grassEdge: '2px solid rgba(35, 60, 40, 0.55)' },
+    rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1743, dot: '#6d88a8', zoom: '133%', pos: 'center 75%', grassBottom: '0%', grassHeight: '62%' },
   };
   const THEME_KEYS = Object.keys(THEMES);
   let theme = $derived(s?.theme && THEMES[s.theme] ? s.theme : 'meadow');
@@ -440,7 +440,7 @@
 
       <!-- The bunny's home. It hops through the run cycle while you're focusing
            and sits still when idle/paused/on a break. -->
-      <div class="habitat" style="--habitat-bg: {scene.bg}; --habitat-size: {scene.zoom ?? 'cover'}; --habitat-pos: {scene.pos ?? 'center'}; --grass-img: url({scene.grass}); --grass-tile: {scene.tile}px; --grass-bottom: {scene.grassBottom ?? '-3%'}; --grass-height: {scene.grassHeight ?? '55%'}; --grass-edge: {scene.grassEdge ?? 'none'}">
+      <div class="habitat" style="--habitat-bg: {scene.bg}; --habitat-size: {scene.zoom ?? 'cover'}; --habitat-pos: {scene.pos ?? 'center'}; --grass-img: url({scene.grass}); --grass-tile: {scene.tile}px; --grass-bottom: {scene.grassBottom ?? '-3%'}; --grass-height: {scene.grassHeight ?? '55%'}">
         <div class="hud">
           <div class="time">{formatMs(remaining)}</div>
           <div class="status">
@@ -920,10 +920,6 @@
     right: 0;
     bottom: var(--grass-bottom, -3%);
     height: var(--grass-height, 55%);
-    /* Optional thin line along the grass top edge, so the front grass reads
-       distinct from the scenery behind it. Off unless a theme sets --grass-edge. */
-    border-top: var(--grass-edge, none);
-    box-sizing: border-box;
     /* Grass image + its exact tile width both come from the active theme
        (--grass-img / --grass-tile), set inline on .habitat. Each strip's ends are
        cross-faded over a plain-grass patch so the scroll seam is invisible, and
