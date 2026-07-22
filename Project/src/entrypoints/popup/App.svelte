@@ -370,7 +370,7 @@
     </nav>
   </header>
 
-  {#if t && s && l}
+  {#if t && s}
     <!-- ===================== FOCUS PAGE ===================== -->
     {#if tab === 'focus'}
       {#if allowed.length}
