@@ -31,77 +31,83 @@
      than the controls inside them) so every element reads on its own, like a
      game HUD. `--accent-deep` is "readable accent text"; `--edge` is the drawn
      panel border. The accent also warms a touch on breaks (data-mode). */
-  --bg: #DDE9C9;            /* tinted page — cards pop white against it */
-  --bg-hi: #ECF4DC;
-  --surface: #FFFFFF;      /* bright panels */
-  --surface-2: #EDF3E0;    /* recessed control wells */
-  --surface-3: #DFEACD;
-  --line: #C7D7AC;
-  --edge: #A6C078;         /* clearly visible green panel edge */
-  --outline: #2E3B22;
-  --ink: #2C3A1F;
-  --ink-soft: #566544;
-  --ink-faint: #8A9C6C;
-  --accent: #55A03D;
-  --accent-deep: #3A7328;
-  --accent-tint: #DCEDC6;
-  --bar-time: #4F93C4;     /* garden sky blue */
-  --bar-xp: #E3A11F;       /* sunflower gold */
+  --bg: #C7E39F;            /* vivid spring meadow — white panels pop hard on it */
+  --bg-hi: #F4FCE3;         /* bright morning-sky glow up top */
+  --surface: #FFFFFF;       /* crisp game panels */
+  --surface-2: #ECF6D9;     /* grassy control wells */
+  --surface-3: #DFEFC3;
+  --line: #C0DB93;
+  --edge: #8FC154;          /* vivid grass panel edge */
+  --outline: #2A3D17;
+  --panel-hi: rgba(255, 255, 255, 0.9);   /* top sheen on panels */
+  --glow: transparent;                    /* light theme needs no glow */
+  --ink: #22380F;
+  --ink-soft: #4C6A2E;
+  --ink-faint: #83A15C;
+  --accent: #4CA827;        /* vivid grass green */
+  --accent-deep: #2C7A14;
+  --accent-tint: #DAF0BD;
+  --bar-time: #3E9DD8;      /* bright spring sky */
+  --bar-xp: #F2A81C;        /* sunflower */
 }
-:root[data-mode="break"] {   /* Meadow break — warm honey rest */
-  --accent: #C68F3C;
-  --accent-deep: #8C6320;
-  --accent-tint: #F1E6CE;
+:root[data-mode="break"] {   /* Meadow break — golden honey rest */
+  --accent: #E29A26;
+  --accent-deep: #A5670F;
+  --accent-tint: #F7E7C2;
 }
 
-/* ── Autumn · MEDIUM — warm toffee page, cream panels, roasted browns ─────── */
+/* ── Autumn · MEDIUM — golden-hour hearth: deep amber page, glowing panels ── */
 :root[data-theme="autumn"] {
-  --bg: #D0A067;           /* mid toffee — cream cards lift off it */
-  --bg-hi: #E0B884;
-  --surface: #FBEBD3;
-  --surface-2: #F0D6B0;
-  --surface-3: #E6C593;
-  --line: #D3AC74;
-  --edge: #B67F42;
-  --outline: #3E2A16;
-  --ink: #4A3016;
-  --ink-soft: #79552F;
-  --ink-faint: #A07E52;
-  --accent: #D8712A;
-  --accent-deep: #A34816;
-  --accent-tint: #F7DFBF;
-  --bar-time: #4C9088;     /* teal foil to the warm scene */
-  --bar-xp: #E89F24;       /* harvest gold */
+  --bg: #A85A29;            /* deep burnt-caramel dusk — its own warm world */
+  --bg-hi: #DA8B42;         /* firelight glow up top */
+  --surface: #F8E5C3;       /* toasted-cream panels glow on the amber page */
+  --surface-2: #F0D3A4;
+  --surface-3: #E7C288;
+  --line: #D9AC71;
+  --edge: #AF6829;          /* strong toasted edge */
+  --outline: #38200E;
+  --panel-hi: rgba(255, 250, 236, 0.85);
+  --glow: transparent;
+  --ink: #38200E;           /* espresso */
+  --ink-soft: #6E4824;
+  --ink-faint: #9A7240;
+  --accent: #E15E1F;        /* ember / pumpkin */
+  --accent-deep: #A9380B;
+  --accent-tint: #F8DBBB;
+  --bar-time: #3C8F86;      /* teal foil to all the warmth */
+  --bar-xp: #EFA724;        /* harvest gold */
 }
-:root[data-theme="autumn"][data-mode="break"] {   /* muted brick-red rest */
-  --accent: #BA5A44;
-  --accent-deep: #8C3F2C;
-  --accent-tint: #F3D9CB;
+:root[data-theme="autumn"][data-mode="break"] {   /* ember-red rest */
+  --accent: #C4483A;
+  --accent-deep: #8E2A1E;
+  --accent-tint: #F3D2C4;
 }
 
-/* ── Rainy · DARK — deep slate page, lifted panels, bright blue accent ─────── */
+/* ── Rainy · DARK — midnight rain: deep indigo, luminous cyan, lantern gold ── */
 :root[data-theme="rainy"] {
-  --bg: #212C37;           /* darkest layer */
-  --bg-hi: #2B3846;
-  --surface: #323F4E;      /* panels sit ABOVE the page */
-  --surface-2: #2A3643;    /* control wells sink BELOW the panel */
-  --surface-3: #3A4A5B;
-  --line: #3E4E5E;
-  --edge: #526779;         /* light-slate edge draws each panel */
-  --outline: #11171E;
-  --ink: #E9EFF5;          /* light text */
-  --ink-soft: #A6B5C5;
-  --ink-faint: #728499;
-  --accent: #5B9AD1;
-  --accent-deep: #A6CFF0;  /* LIGHT on dark — reads as accent text/labels */
-  --accent-tint: #2C4257;  /* dark-blue pill behind that light text */
-  --bar-time: #59B4DB;     /* bright rain-cyan, pops on dark */
-  --bar-xp: #F0B84C;       /* warm lantern gold in the rain */
+  --bg: #161D2E;           /* deep indigo night */
+  --bg-hi: #27324D;        /* cool city/moon glow up top */
+  --surface: #29344D;      /* panels lift above the night */
+  --surface-2: #1F2840;    /* wells sink into shadow */
+  --surface-3: #323E5B;
+  --line: #384663;
+  --edge: #4E6493;         /* cool luminous slate edge */
+  --outline: #0C111E;
+  --panel-hi: rgba(130, 160, 210, 0.14);  /* faint cool top sheen */
+  --glow: rgba(70, 182, 230, 0.38);        /* rain-cyan glow for accents */
+  --ink: #E9EEFB;          /* moonlight */
+  --ink-soft: #A7B4D2;
+  --ink-faint: #6E7CA2;
+  --accent: #46B6E6;       /* luminous rain-cyan */
+  --accent-deep: #93DBF7;  /* light glow-text on dark */
+  --accent-tint: #233A57;  /* deep pill behind it */
+  --bar-time: #4FC2ED;     /* bright rain-cyan */
+  --bar-xp: #F2B84E;       /* warm lantern gold — a lit window in the rain */
 }
-:root[data-theme="rainy"][data-mode="break"] {   /* soft teal rest */
-  --accent: #5E9F9B;
-  --accent-deep: #A9D4D0;
-  --accent-tint: #2B4644;
+:root[data-theme="rainy"][data-mode="break"] {   /* calm teal rest */
+  --accent: #4FB3A6;
+  --accent-deep: #9AE0D4;
+  --accent-tint: #22403C;
 }
 
 * { box-sizing: border-box; }

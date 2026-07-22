@@ -805,8 +805,10 @@
     display: flex;
     gap: 3px;
     background: var(--surface-2);
+    border: 1.5px solid var(--line);
     padding: 4px;
     border-radius: var(--r);
+    transition: background-color 0.35s ease, border-color 0.35s ease;
   }
   .tabs button {
     flex: 1;
@@ -821,15 +823,21 @@
     cursor: pointer;
     transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
   }
-  .tabs button.active { background: var(--surface); color: var(--accent-deep); box-shadow: var(--shadow-sm); }
+  .tabs button.active {
+    background: var(--surface);
+    color: var(--accent-deep);
+    box-shadow: inset 0 1px 0 var(--panel-hi, transparent), var(--shadow-sm);
+  }
 
   /* Cards (Lists / Blocked / Settings) */
   .card {
     background: var(--surface);
-    border: 1.5px solid var(--edge);
+    border: 2px solid var(--edge);
     border-radius: var(--r-lg);
-    box-shadow: var(--shadow);
+    /* Beveled game-panel: a bright top sheen inside, the hard drop below. */
+    box-shadow: inset 0 1.5px 0 var(--panel-hi, transparent), var(--shadow);
     padding: 15px;
+    transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease;
     display: flex;
     flex-direction: column;
     gap: 11px;
@@ -839,7 +847,13 @@
   /* A second group inside the same card — a divider keeps the panel continuous
      instead of splitting it into two separate boxes. */
   .card-sub { padding-top: 12px; border-top: 1px solid var(--line); }
-  .card-label { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+  .card-label {
+    font-family: 'Fredoka', 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--accent-deep);
+  }
   .topic-pill {
     margin-left: auto;
     font-size: 11.5px;
@@ -862,25 +876,29 @@
     width: 100%;
     aspect-ratio: 4 / 5;
     border-radius: var(--r-lg);
-    border: 1.5px solid var(--edge);
+    border: 2px solid var(--edge);
     /* Scene backdrop — swapped per theme via --habitat-bg; --habitat-size zooms a
        theme past cover (rainy) and --habitat-pos nudges its framing (autumn).
        Falls back to the meadow, centred at cover. */
     background: var(--habitat-bg, url(/scene/background.png)) var(--habitat-pos, center) / var(--habitat-size, cover) no-repeat;
-    box-shadow: var(--shadow);
+    /* A soft inner vignette frames the scene like a window into the pet's world,
+       plus the panel's outer drop so it sits above the page. */
+    box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.18), var(--shadow);
     overflow: hidden;
-    transition: background 0.3s ease;
+    transition: background 0.35s ease, border-color 0.35s ease;
   }
   /* Timer "heads-up display" floating near the top of the habitat. */
   .hud { position: absolute; top: 22px; left: 0; right: 0; text-align: center; z-index: 1; }
   .time {
     font-family: 'Fredoka', 'Nunito', sans-serif;
-    font-weight: 500;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
-    font-size: 52px;
+    font-size: 56px;
     line-height: 1;
     letter-spacing: 1px;
     color: var(--ink);
+    /* Depth so the readout stays legible floating over the scene sky. */
+    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.14);
   }
   .status { margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
   /* "Round 2 of 4" — a run with an end in sight is easier to commit to. */
@@ -957,10 +975,11 @@
   /* Parked thoughts — the "for later" list, filled from the redirect page */
   .parked {
     background: var(--surface);
-    border: 1.5px solid var(--edge);
+    border: 2px solid var(--edge);
     border-radius: var(--r-lg);
-    box-shadow: var(--shadow);
+    box-shadow: inset 0 1.5px 0 var(--panel-hi, transparent), var(--shadow);
     padding: 13px 14px;
+    transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease;
     display: flex;
     flex-direction: column;
     gap: 9px;
@@ -1100,11 +1119,14 @@
     border: 2px solid var(--outline); /* same chunky outline as the theme dots */
     box-shadow: 0 2px 0 rgba(59, 46, 31, 0.28);
     overflow: hidden;
+    transition: background-color 0.35s ease, border-color 0.35s ease;
   }
   .mbar-fill {
     height: 100%;
     border-radius: 999px;
-    transition: width 0.3s ease;
+    /* Glossy game-bar: a bright top sheen and a shadow at the base. */
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.32), inset 0 -3px 4px rgba(0, 0, 0, 0.16);
+    transition: width 0.3s ease, background-color 0.35s ease;
   }
   .mbar-fill.tm { background: var(--bar-time); }
   .mbar-fill.xp { background: var(--bar-xp); }
@@ -1133,10 +1155,12 @@
     /* The bottom lip is the accent darkened, so it reads as a shadow in every
        theme (independent of --accent-deep, which flips light in dark mode). */
     border-color: color-mix(in srgb, var(--accent) 58%, #000);
-    box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 58%, #000);
+    /* Solid bottom lip + the theme glow (transparent in light themes, a luminous
+       halo in the dark rainy night). */
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 58%, #000), 0 0 16px var(--glow, transparent);
   }
   .primary:hover:not(:disabled) { filter: brightness(1.05); }
-  .primary:active { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 58%, #000); }
+  .primary:active { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 58%, #000), 0 0 16px var(--glow, transparent); }
   .ghost {
     background: var(--surface);
     color: var(--ink);
