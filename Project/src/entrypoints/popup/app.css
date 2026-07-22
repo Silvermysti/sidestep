@@ -23,77 +23,79 @@
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 
-  /* ── Default palette = Meadow (fresh garden greens) ──────────────────────
+  /* ── Default palette = Meadow · LIGHT (bright fresh garden) ───────────────
      The whole popup recolours with the chosen scene: App.svelte tags <html>
-     with data-theme, and every component reads these tokens. Autumn and Rainy
-     override the colours below; each is its own relaxing mood. The accent also
-     shifts a touch between focus and break (data-mode) so a break reads warmer
-     and more restful. */
-  --bg: #ECF1E0;
-  --bg-hi: #F8FBEE;
-  --surface: #FBFDF5;
-  --surface-2: #E7EDD8;
-  --surface-3: #DCE4C9;
-  --line: #DEE6CC;
-  --edge: #C6D2AC;
-  --outline: #34402A;
-  --ink: #3E4A33;
-  --ink-soft: #6F7B5E;
-  --ink-faint: #A4AE90;
-  --accent: #5FA357;
-  --accent-deep: #3C7A3A;
-  --accent-tint: #E4EFD8;
+     with data-theme, and every component reads these tokens. The three themes
+     climb a lightness ladder — Meadow light, Autumn medium, Rainy dark — and
+     each keeps strong LAYER contrast (page darker than panels, panels lighter
+     than the controls inside them) so every element reads on its own, like a
+     game HUD. `--accent-deep` is "readable accent text"; `--edge` is the drawn
+     panel border. The accent also warms a touch on breaks (data-mode). */
+  --bg: #DDE9C9;            /* tinted page — cards pop white against it */
+  --bg-hi: #ECF4DC;
+  --surface: #FFFFFF;      /* bright panels */
+  --surface-2: #EDF3E0;    /* recessed control wells */
+  --surface-3: #DFEACD;
+  --line: #C7D7AC;
+  --edge: #A6C078;         /* clearly visible green panel edge */
+  --outline: #2E3B22;
+  --ink: #2C3A1F;
+  --ink-soft: #566544;
+  --ink-faint: #8A9C6C;
+  --accent: #55A03D;
+  --accent-deep: #3A7328;
+  --accent-tint: #DCEDC6;
 }
-:root[data-mode="break"] {   /* Meadow break — soft honey rest */
-  --accent: #D6A24E;
-  --accent-deep: #9A6A28;
-  --accent-tint: #F3E9D2;
+:root[data-mode="break"] {   /* Meadow break — warm honey rest */
+  --accent: #C68F3C;
+  --accent-deep: #8C6320;
+  --accent-tint: #F1E6CE;
 }
 
-/* ── Autumn — warm amber, roasted browns, cosy ───────────────────────────── */
+/* ── Autumn · MEDIUM — warm toffee page, cream panels, roasted browns ─────── */
 :root[data-theme="autumn"] {
-  --bg: #F6E8D2;
-  --bg-hi: #FFF3DF;
-  --surface: #FFF6E9;
-  --surface-2: #F0DEBF;
-  --surface-3: #E7D0A9;
-  --line: #EAD3B0;
-  --edge: #D8BA8C;
-  --outline: #47311F;
-  --ink: #4E3826;
-  --ink-soft: #8B6D4F;
-  --ink-faint: #BD9F7C;
-  --accent: #D07C36;
-  --accent-deep: #9C5320;
-  --accent-tint: #F6E1C9;
+  --bg: #D0A067;           /* mid toffee — cream cards lift off it */
+  --bg-hi: #E0B884;
+  --surface: #FBEBD3;
+  --surface-2: #F0D6B0;
+  --surface-3: #E6C593;
+  --line: #D3AC74;
+  --edge: #B67F42;
+  --outline: #3E2A16;
+  --ink: #4A3016;
+  --ink-soft: #79552F;
+  --ink-faint: #A07E52;
+  --accent: #D8712A;
+  --accent-deep: #A34816;
+  --accent-tint: #F7DFBF;
 }
 :root[data-theme="autumn"][data-mode="break"] {   /* muted brick-red rest */
-  --accent: #B85C46;
-  --accent-deep: #8A3F2E;
-  --accent-tint: #F3DDCF;
+  --accent: #BA5A44;
+  --accent-deep: #8C3F2C;
+  --accent-tint: #F3D9CB;
 }
 
-/* ── Rainy — cool misty blue-grey, calm ──────────────────────────────────── */
+/* ── Rainy · DARK — deep slate page, lifted panels, bright blue accent ─────── */
 :root[data-theme="rainy"] {
-  --bg: #E3E9F0;
-  --bg-hi: #F1F5FA;
-  --surface: #F7FAFD;
-  --surface-2: #DBE4EE;
-  --surface-3: #CCD8E5;
-  --line: #D2DCE8;
-  --edge: #B2C3D5;
-  --outline: #2B3947;
-  --ink: #35434F;
-  --ink-soft: #637484;
-  --ink-faint: #99A9B8;
-  --accent: #5B8FB5;
-  --accent-deep: #3A6488;
-  --accent-tint: #DBE8F2;
+  --bg: #212C37;           /* darkest layer */
+  --bg-hi: #2B3846;
+  --surface: #323F4E;      /* panels sit ABOVE the page */
+  --surface-2: #2A3643;    /* control wells sink BELOW the panel */
+  --surface-3: #3A4A5B;
+  --line: #3E4E5E;
+  --edge: #526779;         /* light-slate edge draws each panel */
+  --outline: #11171E;
+  --ink: #E9EFF5;          /* light text */
+  --ink-soft: #A6B5C5;
+  --ink-faint: #728499;
+  --accent: #5B9AD1;
+  --accent-deep: #A6CFF0;  /* LIGHT on dark — reads as accent text/labels */
+  --accent-tint: #2C4257;  /* dark-blue pill behind that light text */
 }
 :root[data-theme="rainy"][data-mode="break"] {   /* soft teal rest */
-  --accent: #6E9C9A;
-  --accent-deep: #43706E;
-  --accent-tint: #DCEAE8;
+  --accent: #5E9F9B;
+  --accent-deep: #A9D4D0;
+  --accent-tint: #2B4644;
 }
 
 * { box-sizing: border-box; }

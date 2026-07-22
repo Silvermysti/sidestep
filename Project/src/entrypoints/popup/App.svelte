@@ -1130,11 +1130,13 @@
   .primary {
     background: var(--accent);
     color: #fff;
-    border-color: color-mix(in srgb, var(--accent-deep) 55%, transparent);
-    box-shadow: 0 4px 0 var(--accent-deep);
+    /* The bottom lip is the accent darkened, so it reads as a shadow in every
+       theme (independent of --accent-deep, which flips light in dark mode). */
+    border-color: color-mix(in srgb, var(--accent) 58%, #000);
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 58%, #000);
   }
-  .primary:hover:not(:disabled) { filter: brightness(1.03); }
-  .primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--accent-deep); }
+  .primary:hover:not(:disabled) { filter: brightness(1.05); }
+  .primary:active { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 58%, #000); }
   .ghost {
     background: var(--surface);
     color: var(--ink);
@@ -1154,7 +1156,7 @@
     font-size: 13px;
     color: var(--ink);
     background: var(--surface-2);
-    border: 1.5px solid transparent;
+    border: 1.5px solid var(--line);
     border-radius: 11px;
     padding: 9px 12px;
     transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
@@ -1223,6 +1225,7 @@
     align-items: center;
     gap: 8px;
     background: var(--surface-2);
+    border: 1px solid var(--line);
     border-radius: 11px;
     padding: 8px 11px;
   }
@@ -1241,6 +1244,7 @@
   .chip {
     display: flex; align-items: center; gap: 3px;
     background: var(--surface-2);
+    border: 1px solid var(--line);
     border-radius: 999px;
     padding: 5px 7px 5px 12px;
     font-size: 12.5px; font-weight: 600; color: var(--ink);
