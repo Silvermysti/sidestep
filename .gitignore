@@ -33,3 +33,8 @@ project.zip
 
 # Large demo recordings — kept locally, too big for the repo
 *.mp4
+
+# Working design art — the raw sprite/scene source, kept locally. The art the
+# extension actually ships lives in source/public/ and load-unpacked/.
+assets/Animation images/
+assets/Bunny.png
