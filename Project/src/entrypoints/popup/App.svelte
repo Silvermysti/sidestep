@@ -142,6 +142,15 @@
     saveSettings({ theme: key });
   }
 
+  // Paint the whole popup in the active scene's palette, and warm the accent
+  // during breaks. We tag <html> with data-theme / data-mode; app.css keys every
+  // colour token off those two attributes, so the entire UI recolours together.
+  $effect(() => {
+    const root = document.documentElement;
+    root.dataset.theme = theme;
+    root.dataset.mode = isFocus ? 'focus' : 'break';
+  });
+
   // --- XP meter ---
   // XP is measured in focus minutes, owned by the background (lib/storage
   // `progress`) — here we only display it. It only ever grows (earned by
@@ -760,13 +769,6 @@
     flex-direction: column;
     gap: 12px;
   }
-  /* Focus = sage (default in :root). Break = warm honey. */
-  main.break {
-    --accent: #D9A35E;
-    --accent-deep: #9C6A2A;
-    --accent-tint: #F7EDD9;
-  }
-
   /* Header: brand + top tab bar */
   .top { display: flex; flex-direction: column; gap: 10px; }
   .brand-wrap { display: flex; align-items: center; gap: 7px; padding: 2px 2px 0; }

@@ -8,30 +8,11 @@
 @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/fredoka-600.woff2') format('woff2'); }
 
 :root {
-  /* ── Cozy storybook palette ──────────────────────────────────────────────
-     Warm illustrated-paper tones with soft cocoa ink. Pieces sit on the page
-     like cut paper — a small HARD drop step plus a faint soft halo. One accent
-     swaps with the mode (set per-mode in App.svelte): forest sage for focus
-     (growth — ties to the grass-eating bunny), warm honey for break (rest). */
-  --bg: #F3E7CE;            /* warm page cream */
-  --surface: #FFFCF5;       /* soft paper white */
-  --surface-2: #F2E4CB;     /* recessed cream (tracks, inputs, chips) */
-  --surface-3: #EAD9BC;     /* deeper cream */
-  --line: #E5D4B4;          /* hairline divider */
-  --edge: #D9C4A0;          /* firmer "drawn" card edge */
-  --outline: #3B2E1F;       /* chunky pixel outline (dots, bars) */
-
-  --ink: #4B3C29;           /* warm cocoa */
-  --ink-soft: #8B775C;
-  --ink-faint: #B7A483;
-
-  --accent: #66A07A;        /* forest sage */
-  --accent-deep: #3D7150;
-  --accent-tint: #E4EFE2;
-
-  --shadow-sm: 0 2px 0 rgba(75, 60, 41, 0.10);
-  --shadow: 0 3px 0 rgba(75, 60, 41, 0.08), 0 12px 22px rgba(75, 60, 41, 0.13);
-
+  /* ── Shape & type tokens — shared by every theme ─────────────────────────
+     Only COLOUR changes between the three scenes; corners, shadows, and fonts
+     stay constant so the popup keeps one calm, cohesive shape. */
+  --shadow-sm: 0 2px 0 rgba(60, 50, 35, 0.12);
+  --shadow: 0 3px 0 rgba(60, 50, 35, 0.09), 0 12px 22px rgba(60, 50, 35, 0.14);
   --r-lg: 20px;
   --r: 14px;
   --r-sm: 11px;
@@ -41,16 +22,87 @@
   color-scheme: light;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+
+  /* ── Default palette = Meadow (fresh garden greens) ──────────────────────
+     The whole popup recolours with the chosen scene: App.svelte tags <html>
+     with data-theme, and every component reads these tokens. Autumn and Rainy
+     override the colours below; each is its own relaxing mood. The accent also
+     shifts a touch between focus and break (data-mode) so a break reads warmer
+     and more restful. */
+  --bg: #ECF1E0;
+  --bg-hi: #F8FBEE;
+  --surface: #FBFDF5;
+  --surface-2: #E7EDD8;
+  --surface-3: #DCE4C9;
+  --line: #DEE6CC;
+  --edge: #C6D2AC;
+  --outline: #34402A;
+  --ink: #3E4A33;
+  --ink-soft: #6F7B5E;
+  --ink-faint: #A4AE90;
+  --accent: #5FA357;
+  --accent-deep: #3C7A3A;
+  --accent-tint: #E4EFD8;
+}
+:root[data-mode="break"] {   /* Meadow break — soft honey rest */
+  --accent: #D6A24E;
+  --accent-deep: #9A6A28;
+  --accent-tint: #F3E9D2;
+}
+
+/* ── Autumn — warm amber, roasted browns, cosy ───────────────────────────── */
+:root[data-theme="autumn"] {
+  --bg: #F6E8D2;
+  --bg-hi: #FFF3DF;
+  --surface: #FFF6E9;
+  --surface-2: #F0DEBF;
+  --surface-3: #E7D0A9;
+  --line: #EAD3B0;
+  --edge: #D8BA8C;
+  --outline: #47311F;
+  --ink: #4E3826;
+  --ink-soft: #8B6D4F;
+  --ink-faint: #BD9F7C;
+  --accent: #D07C36;
+  --accent-deep: #9C5320;
+  --accent-tint: #F6E1C9;
+}
+:root[data-theme="autumn"][data-mode="break"] {   /* muted brick-red rest */
+  --accent: #B85C46;
+  --accent-deep: #8A3F2E;
+  --accent-tint: #F3DDCF;
+}
+
+/* ── Rainy — cool misty blue-grey, calm ──────────────────────────────────── */
+:root[data-theme="rainy"] {
+  --bg: #E3E9F0;
+  --bg-hi: #F1F5FA;
+  --surface: #F7FAFD;
+  --surface-2: #DBE4EE;
+  --surface-3: #CCD8E5;
+  --line: #D2DCE8;
+  --edge: #B2C3D5;
+  --outline: #2B3947;
+  --ink: #35434F;
+  --ink-soft: #637484;
+  --ink-faint: #99A9B8;
+  --accent: #5B8FB5;
+  --accent-deep: #3A6488;
+  --accent-tint: #DBE8F2;
+}
+:root[data-theme="rainy"][data-mode="break"] {   /* soft teal rest */
+  --accent: #6E9C9A;
+  --accent-deep: #43706E;
+  --accent-tint: #DCEAE8;
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 
 body {
-  /* A Chrome popup sizes to its content; this sets a comfortable width. The warm
-     radial lift adds a storybook glow so the canvas doesn't read as flat. */
+  /* A Chrome popup sizes to its content; this sets a comfortable width. The
+     radial lift adds a soft glow, tinted by the active theme's --bg-hi. */
   width: 344px;
   color: var(--ink);
-  background:
-    radial-gradient(130% 92% at 50% -12%, #FFF7E7 0%, var(--bg) 62%);
+  background: radial-gradient(130% 92% at 50% -12%, var(--bg-hi) 0%, var(--bg) 62%);
 }
