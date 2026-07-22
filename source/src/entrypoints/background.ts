@@ -21,6 +21,7 @@ import {
 const TIMER_ALARM = 'sidestep-timer-end';
 const TICK_ALARM = 'sidestep-tick';
 const FREEDOM_PREFIX = 'sidestep-freedom:';
+const BADGE_ALARM = 'sidestep-badge';
 
 const WAKE_GAP_MS = 2 * 60 * 1000;
 const XP_PER_MIN = 1;
@@ -45,6 +46,7 @@ export default defineBackground(() => {
 
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === TIMER_ALARM || alarm.name === TICK_ALARM) wake();
+    else if (alarm.name === BADGE_ALARM) updateBadge();
     else if (alarm.name.startsWith(FREEDOM_PREFIX)) {
       dropAllowance(alarm.name.slice(FREEDOM_PREFIX.length));
     }
@@ -196,6 +198,7 @@ async function syncAlarm(t: any) {
     browser.alarms.create(TIMER_ALARM, { when: t.endsAt });
   }
   renderBadge(t);
+  await scheduleBadgeTick(t);
 }
 
 function renderBadge(t: any) {
@@ -203,16 +206,26 @@ function renderBadge(t: any) {
     browser.action.setBadgeText({ text: '' });
     return;
   }
-  const mins = Math.ceil(getRemainingMs(t) / 60000);
-  browser.action.setBadgeText({ text: mins > 0 ? String(mins) : '·' });
+  const mins = Math.floor(getRemainingMs(t) / 60000);
+  browser.action.setBadgeText({ text: mins >= 1 ? String(mins) : '<1' });
   const color =
     t.status === 'paused' ? BADGE_PAUSED : t.mode === 'break' ? BADGE_BREAK : BADGE_FOCUS;
   browser.action.setBadgeBackgroundColor({ color });
   (browser.action as any).setBadgeTextColor?.({ color: '#ffffff' });
 }
 
+async function scheduleBadgeTick(t: any) {
+  await browser.alarms.clear(BADGE_ALARM);
+  if (!t || t.status !== 'running' || !t.endsAt) return;
+  const rem = getRemainingMs(t);
+  if (rem <= 0) return;
+  browser.alarms.create(BADGE_ALARM, { when: Date.now() + (rem % 60000 || 60000) });
+}
+
 async function updateBadge() {
-  renderBadge(await timer.getValue());
+  const t = await timer.getValue();
+  renderBadge(t);
+  await scheduleBadgeTick(t);
 }
 
 async function resetOnBrowserRestart() {
