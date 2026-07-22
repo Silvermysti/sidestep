@@ -267,6 +267,7 @@ async function handleCommand(message: any) {
       break;
     case 'reset':
       next = resetState(t, s);
+      await clearAllAllowances(); // a reset is a clean slate — drop the site passes too
       break;
     default:
       return;
@@ -324,6 +325,17 @@ async function expireAllowance(site: string) {
   await dropAllowance(site);
 }
 
+// Wipe every freedom window and its cleanup alarm at once. Called when the timer
+// is reset: a reset is a clean slate, so the temporary site passes go with it and
+// the next session starts fully protected again.
+async function clearAllAllowances() {
+  const a = await allowances.getValue();
+  const sites = Object.keys(a ?? {});
+  if (!sites.length) return;
+  await allowances.setValue({});
+  for (const site of sites) await browser.alarms.clear(FREEDOM_PREFIX + site);
+}
+
 // Keep the alarm in sync with the timer: one alarm when running, none otherwise.
 async function syncAlarm(t: any) {
   await browser.alarms.clear(TIMER_ALARM);
@@ -345,6 +357,7 @@ async function resetOnBrowserRestart() {
   const fresh = resetState(t, s);
   await timer.setValue(fresh);
   await syncAlarm(fresh);
+  await clearAllAllowances(); // same clean-slate reset — leftover passes go too
 }
 
 // A single wake-up. First the sleep guard (which may pause a session left through
