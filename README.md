@@ -97,11 +97,14 @@ HackWave/
 │     ├─ entrypoints/
 │     │  ├─ popup/        the toolbar popup (timer, companion, themes, settings)
 │     │  ├─ nudge/        the calm pause page
-│     │  └─ background.ts the service worker: owns the timer + site blocking
+│     │  ├─ background.ts the service worker: owns the timer + site blocking
+│     │  └─ content.ts    injected into pages — the on-page companion
 │     └─ lib/
 │        ├─ storage.js    what we save (settings, timer, thoughts, allowances)
 │        ├─ sites.js      URL rules: is this host distracting? domain matching
-│        └─ timer.js      pure, timestamp-based timer logic
+│        ├─ timer.js      pure, timestamp-based timer logic
+│        ├─ companions.js the pets, their XP thresholds and unlocks
+│        └─ parking.js    the thought parking lot
 ├─ docs/              ARCHITECTURE.md, PLAN.md, demo notes
 ├─ assets/            banner, icon, design art
 └─ README.md
@@ -134,7 +137,7 @@ Load `source/.output/chrome-mv3/` the same way as `load-unpacked/` above. For li
 - [x] Sleep-aware: laptop sleep pauses the session, a browser close resets it
 - [ ] Session wrap-up: a gentle, additive-only "win log" (focused minutes, thoughts parked)
 - [ ] Opt-in cross-device sync
-- [ ] Firefox build
+- [ ] Firefox build — the build scripts exist (`npm run build:firefox`, courtesy of WXT), but it hasn't been tested and shipped yet
 
 ---
 
