@@ -8,28 +8,33 @@
 @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/fredoka-600.woff2') format('woff2'); }
 
 :root {
-  /* Warm, soft palette. One accent that swaps with the mode (set per-mode in
-     App.svelte): sage green for focus (growth — ties to the grass-eating bunny),
-     warm honey for break (rest). */
-  --bg: #FAF5EE;
-  --surface: #FFFFFF;
-  --surface-2: #F4ECDF;
-  --surface-3: #EFE6D5;
-  --line: #ECE3D4;
-  --ink: #463F36;
-  --ink-soft: #8E8171;
-  --ink-faint: #B9AD9B;
+  /* ── Cozy storybook palette ──────────────────────────────────────────────
+     Warm illustrated-paper tones with soft cocoa ink. Pieces sit on the page
+     like cut paper — a small HARD drop step plus a faint soft halo. One accent
+     swaps with the mode (set per-mode in App.svelte): forest sage for focus
+     (growth — ties to the grass-eating bunny), warm honey for break (rest). */
+  --bg: #F3E7CE;            /* warm page cream */
+  --surface: #FFFCF5;       /* soft paper white */
+  --surface-2: #F2E4CB;     /* recessed cream (tracks, inputs, chips) */
+  --surface-3: #EAD9BC;     /* deeper cream */
+  --line: #E5D4B4;          /* hairline divider */
+  --edge: #D9C4A0;          /* firmer "drawn" card edge */
+  --outline: #3B2E1F;       /* chunky pixel outline (dots, bars) */
 
-  --accent: #6FAC8C;        /* sage */
-  --accent-deep: #3E7A5C;
-  --accent-tint: #E8F1EB;
+  --ink: #4B3C29;           /* warm cocoa */
+  --ink-soft: #8B775C;
+  --ink-faint: #B7A483;
 
-  --shadow-sm: 0 1px 3px rgba(78, 62, 40, 0.07);
-  --shadow: 0 8px 24px rgba(78, 62, 40, 0.10), 0 2px 6px rgba(78, 62, 40, 0.05);
+  --accent: #66A07A;        /* forest sage */
+  --accent-deep: #3D7150;
+  --accent-tint: #E4EFE2;
 
-  --r-lg: 18px;
-  --r: 13px;
-  --r-sm: 10px;
+  --shadow-sm: 0 2px 0 rgba(75, 60, 41, 0.10);
+  --shadow: 0 3px 0 rgba(75, 60, 41, 0.08), 0 12px 22px rgba(75, 60, 41, 0.13);
+
+  --r-lg: 20px;
+  --r: 14px;
+  --r-sm: 11px;
 
   font-family: 'Nunito', ui-rounded, system-ui, -apple-system, sans-serif;
   line-height: 1.45;
@@ -42,10 +47,10 @@
 html, body { margin: 0; }
 
 body {
-  /* A Chrome popup sizes to its content; this sets a comfortable width. The soft
-     radial lift adds warmth so the canvas doesn't read as flat/sterile. */
+  /* A Chrome popup sizes to its content; this sets a comfortable width. The warm
+     radial lift adds a storybook glow so the canvas doesn't read as flat. */
   width: 344px;
   color: var(--ink);
   background:
-    radial-gradient(135% 90% at 50% -15%, #FFFDF9 0%, var(--bg) 58%);
+    radial-gradient(130% 92% at 50% -12%, #FFF7E7 0%, var(--bg) 62%);
 }

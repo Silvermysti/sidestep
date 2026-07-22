@@ -785,10 +785,10 @@
     width: 17px;
     height: 17px;
     padding: 0;
-    border: 2px solid #2f2416; /* chunky pixel-art outline */
+    border: 2px solid var(--outline); /* chunky pixel-art outline */
     border-radius: 50%;
     background: var(--dot);
-    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22); /* small offset, like a sticker */
+    box-shadow: 0 2px 0 rgba(59, 46, 31, 0.28); /* small offset, like a sticker */
     image-rendering: pixelated;
     cursor: pointer;
     transition: transform 0.1s ease;
@@ -824,7 +824,7 @@
   /* Cards (Lists / Blocked / Settings) */
   .card {
     background: var(--surface);
-    border: 1px solid var(--line);
+    border: 1.5px solid var(--edge);
     border-radius: var(--r-lg);
     box-shadow: var(--shadow);
     padding: 15px;
@@ -860,7 +860,7 @@
     width: 100%;
     aspect-ratio: 4 / 5;
     border-radius: var(--r-lg);
-    border: 1px solid var(--line);
+    border: 1.5px solid var(--edge);
     /* Scene backdrop — swapped per theme via --habitat-bg; --habitat-size zooms a
        theme past cover (rainy) and --habitat-pos nudges its framing (autumn).
        Falls back to the meadow, centred at cover. */
@@ -955,7 +955,7 @@
   /* Parked thoughts — the "for later" list, filled from the redirect page */
   .parked {
     background: var(--surface);
-    border: 1px solid var(--line);
+    border: 1.5px solid var(--edge);
     border-radius: var(--r-lg);
     box-shadow: var(--shadow);
     padding: 13px 14px;
@@ -1095,8 +1095,8 @@
     height: 11px;
     border-radius: 999px;
     background: var(--surface-2);
-    border: 2px solid #2f2416; /* same chunky outline as the theme dots */
-    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
+    border: 2px solid var(--outline); /* same chunky outline as the theme dots */
+    box-shadow: 0 2px 0 rgba(59, 46, 31, 0.28);
     overflow: hidden;
   }
   .mbar-fill {
@@ -1104,8 +1104,8 @@
     border-radius: 999px;
     transition: width 0.3s ease;
   }
-  .mbar-fill.tm { background: #5b9bd5; }
-  .mbar-fill.xp { background: #f5b301; }
+  .mbar-fill.tm { background: #5f97b8; }
+  .mbar-fill.xp { background: #e8a838; }
   @media (prefers-reduced-motion: reduce) {
     .mbar-fill { transition: none; }
   }
@@ -1120,19 +1120,28 @@
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    border: 1px solid transparent;
-    transition: filter 0.15s ease, transform 0.05s ease, background 0.15s ease;
+    border: 2px solid transparent;
+    /* Cozy pressable buttons: a solid bottom edge makes them sit up off the page
+       like a picture-book sticker, and pressing compresses that edge to nothing. */
+    transition: transform 0.06s ease, box-shadow 0.06s ease, filter 0.15s ease, background 0.15s ease;
   }
   .primary {
     background: var(--accent);
     color: #fff;
-    box-shadow: 0 5px 14px color-mix(in srgb, var(--accent) 38%, transparent);
+    border-color: color-mix(in srgb, var(--accent-deep) 55%, transparent);
+    box-shadow: 0 4px 0 var(--accent-deep);
   }
-  .primary:hover { filter: brightness(1.04); }
-  .primary:active { transform: translateY(1px); }
-  .ghost { background: var(--surface); color: var(--ink-soft); border-color: var(--line); }
+  .primary:hover:not(:disabled) { filter: brightness(1.03); }
+  .primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--accent-deep); }
+  .ghost {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--edge);
+    box-shadow: 0 4px 0 var(--edge);
+  }
   .ghost:hover:not(:disabled) { background: var(--surface-2); }
-  .controls button:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+  .ghost:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--edge); }
+  .controls button:disabled { opacity: 0.5; cursor: default; box-shadow: none; transform: none; }
 
   /* Inputs */
   .row { display: flex; gap: 7px; }
@@ -1306,13 +1315,13 @@
     align-items: center;
     gap: 6px;
     padding: 12px 8px 10px;
-    border: 1.5px solid var(--line);
+    border: 1.5px solid var(--edge);
     border-radius: var(--r);
     background: var(--surface-2);
     cursor: pointer;
     transition: border-color 0.15s ease, background 0.15s ease, transform 0.05s ease;
   }
-  .pet:hover { border-color: var(--accent-tint); }
+  .pet:hover { border-color: var(--accent); }
   .pet:active { transform: translateY(1px); }
   .pet.selected {
     border-color: var(--accent);
@@ -1320,7 +1329,7 @@
   }
   /* A pet you haven't earned yet: dimmed, not clickable, with its XP price shown. */
   .pet.locked { cursor: not-allowed; opacity: 0.55; filter: grayscale(0.9); }
-  .pet.locked:hover { border-color: var(--line); }
+  .pet.locked:hover { border-color: var(--edge); }
   .pet.locked:active { transform: none; }
   .pet .lock { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); }
   .pet img {
