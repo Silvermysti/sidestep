@@ -804,7 +804,6 @@
     display: flex;
     gap: 3px;
     background: var(--surface-2);
-    border: 1.5px solid var(--line);
     padding: 4px;
     border-radius: var(--r);
     transition: background-color 0.35s ease, border-color 0.35s ease;
@@ -825,16 +824,15 @@
   .tabs button.active {
     background: var(--surface);
     color: var(--accent-deep);
-    box-shadow: inset 0 1px 0 var(--panel-hi, transparent), var(--shadow-sm);
+    box-shadow: var(--shadow-sm);
   }
 
   /* Cards (Lists / Blocked / Settings) */
   .card {
     background: var(--surface);
-    border: 1.5px solid var(--edge);
     border-radius: var(--r-lg);
-    /* Beveled game-panel: a bright top sheen inside, the hard drop below. */
-    box-shadow: inset 0 1.5px 0 var(--panel-hi, transparent), var(--shadow);
+    /* Clean floating panel — soft shadow, no border (matches the preview). */
+    box-shadow: var(--shadow);
     padding: 15px;
     transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease;
     display: flex;
@@ -974,9 +972,8 @@
   /* Parked thoughts — the "for later" list, filled from the redirect page */
   .parked {
     background: var(--surface);
-    border: 1.5px solid var(--edge);
     border-radius: var(--r-lg);
-    box-shadow: inset 0 1.5px 0 var(--panel-hi, transparent), var(--shadow);
+    box-shadow: var(--shadow);
     padding: 13px 14px;
     transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease;
     display: flex;
@@ -1115,10 +1112,8 @@
     height: 12px;
     border-radius: 999px;
     background: var(--surface-2);
-    border: 1px solid var(--line);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
     overflow: hidden;
-    transition: background-color 0.35s ease, border-color 0.35s ease;
+    transition: background-color 0.35s ease;
   }
   .mbar-fill {
     height: 100%;

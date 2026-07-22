@@ -11,8 +11,9 @@
   /* ── Shape & type tokens — shared by every theme ─────────────────────────
      Only COLOUR changes between the three scenes; corners, shadows, and fonts
      stay constant so the popup keeps one calm, cohesive shape. */
-  --shadow-sm: 0 2px 0 rgba(60, 50, 35, 0.12);
-  --shadow: 0 3px 0 rgba(60, 50, 35, 0.09), 0 12px 22px rgba(60, 50, 35, 0.14);
+  /* Soft, neutral float — matches the preview's clean shadows (no hard step). */
+  --shadow-sm: 0 2px 6px rgba(38, 34, 30, 0.08);
+  --shadow: 0 14px 34px rgba(38, 34, 30, 0.13);
   --r-lg: 20px;
   --r: 14px;
   --r-sm: 11px;
@@ -136,5 +137,5 @@ body {
      radial lift adds a soft glow, tinted by the active theme's --bg-hi. */
   width: 344px;
   color: var(--ink);
-  background: radial-gradient(130% 92% at 50% -12%, var(--bg-hi) 0%, var(--bg) 62%);
+  background: var(--bg);
 }
