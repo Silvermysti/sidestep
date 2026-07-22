@@ -413,7 +413,7 @@
       <div class="stat-bars">
         <div class="mbar">
           <div class="mbar-head">
-            <span class="mbar-lab">Time left</span>
+            <span class="mbar-lab">Time</span>
             <span class="mbar-val">{formatMs(remaining)}</span>
           </div>
           <div class="mbar-track"><div class="mbar-fill tm" style="width: {progress * 100}%"></div></div>
