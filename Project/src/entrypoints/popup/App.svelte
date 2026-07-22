@@ -564,10 +564,7 @@
         </div>
 
         <label class="setting toggle-row">
-          <span class="setting-name">
-            Companion on web pages
-            <small class="setting-note">show the buddy on the page you're reading</small>
-          </span>
+          <span class="setting-name">Companion on web pages</span>
           <input
             class="toggle"
             type="checkbox"
@@ -578,7 +575,7 @@
 
         <!-- Progress toward the next pet, so the 🔒 prices on the locked tiles
              below read as "how much further", not just a number. -->
-        <div class="mbar card-sub">
+        <div class="mbar">
           <div class="mbar-head">
             <span class="mbar-lab">{xpLead}</span>
             <span class="mbar-val">{xpValue}</span>
