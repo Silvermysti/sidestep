@@ -674,10 +674,10 @@
     width: 17px;
     height: 17px;
     padding: 0;
-    border: 2px solid var(--surface);
+    border: 2px solid var(--outline); /* chunky pixel-art outline */
     border-radius: 50%;
     background: var(--dot);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22); /* soft lift */
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22); /* small offset, like a sticker */
     cursor: pointer;
     transition: transform 0.1s ease;
   }
@@ -1002,8 +1002,10 @@
     height: 12px;
     border-radius: 999px;
     background: var(--surface-2);
+    border: 2px solid var(--outline); /* same chunky outline as the theme dots */
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
     overflow: hidden;
-    transition: background-color 0.35s ease;
+    transition: background-color 0.35s ease, border-color 0.35s ease;
   }
   .mbar-fill {
     height: 100%;
