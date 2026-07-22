@@ -20,6 +20,7 @@ import {
   resumeState,
   resetState,
   completeState,
+  getRemainingMs,
   isRunOver,
   totalCycles,
 } from '@/lib/timer';
@@ -43,6 +44,13 @@ const WAKE_GAP_MS = 2 * 60 * 1000;
 // The once-a-minute tick applies it with the real elapsed awake time. Unlock
 // thresholds live in companions.js.
 const XP_PER_MIN = 1;
+
+// Toolbar-badge colours. The badge shows the minutes left in the session, so its
+// countdown is visible without opening the popup. Focus, break, and paused each
+// get a distinct tint; white text sits legibly on all three.
+const BADGE_FOCUS = '#2F7A4A';   // calm green
+const BADGE_BREAK = '#B5722A';   // warm amber
+const BADGE_PAUSED = '#6E6E6E';  // muted grey
 
 export default defineBackground(() => {
   // Settings saved by an older version may be missing keys added later (the
@@ -272,6 +280,31 @@ async function syncAlarm(t: any) {
   if (t.status === 'running' && t.endsAt) {
     browser.alarms.create(TIMER_ALARM, { when: t.endsAt });
   }
+  renderBadge(t); // keep the toolbar countdown in step with every timer change
+}
+
+// Paint the minutes left onto the toolbar icon's badge. Idle clears it; paused
+// dims the colour; focus and break get their own tint. Minute granularity is all
+// MV3 affords cheaply — the tick fires once a minute — and Chrome keeps the last
+// badge on screen while the service worker sleeps between ticks.
+function renderBadge(t: any) {
+  if (!t || t.status === 'idle') {
+    browser.action.setBadgeText({ text: '' });
+    return;
+  }
+  const mins = Math.ceil(getRemainingMs(t) / 60000);
+  browser.action.setBadgeText({ text: mins > 0 ? String(mins) : '·' });
+  const color =
+    t.status === 'paused' ? BADGE_PAUSED : t.mode === 'break' ? BADGE_BREAK : BADGE_FOCUS;
+  browser.action.setBadgeBackgroundColor({ color });
+  // Chrome 110+ lets us force white text; harmless (optional-chained) if absent.
+  (browser.action as any).setBadgeTextColor?.({ color: '#ffffff' });
+}
+
+// Read the current timer and repaint the badge — used on the once-a-minute tick,
+// where the stored timer doesn't change but the minutes remaining tick down.
+async function updateBadge() {
+  renderBadge(await timer.getValue());
 }
 
 // Browser was closed and reopened (or the machine was shut down and rebooted).
@@ -298,6 +331,7 @@ async function resetOnBrowserRestart() {
 async function wake() {
   await beat();
   await reconcile();
+  await updateBadge(); // refresh the toolbar countdown each tick (and on startup)
 }
 
 // Heartbeat + sleep guard.
