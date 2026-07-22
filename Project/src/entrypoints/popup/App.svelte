@@ -563,9 +563,22 @@
           <span class="card-label">Your companions</span>
         </div>
 
+        <label class="setting toggle-row">
+          <span class="setting-name">
+            Companion on web pages
+            <small class="setting-note">show the buddy on the page you're reading</small>
+          </span>
+          <input
+            class="toggle"
+            type="checkbox"
+            checked={s.showOnPage ?? true}
+            onchange={(e) => saveSettings({ showOnPage: e.currentTarget.checked })}
+          />
+        </label>
+
         <!-- Progress toward the next pet, so the 🔒 prices on the locked tiles
              below read as "how much further", not just a number. -->
-        <div class="mbar">
+        <div class="mbar card-sub">
           <div class="mbar-head">
             <span class="mbar-lab">{xpLead}</span>
             <span class="mbar-val">{xpValue}</span>
@@ -591,19 +604,6 @@
             </button>
           {/each}
         </div>
-
-        <label class="setting toggle-row card-sub">
-          <span class="setting-name">
-            Companion on web pages
-            <small class="setting-note">show the buddy on the page you're reading</small>
-          </span>
-          <input
-            class="toggle"
-            type="checkbox"
-            checked={s.showOnPage ?? true}
-            onchange={(e) => saveSettings({ showOnPage: e.currentTarget.checked })}
-          />
-        </label>
 
         <p class="hint">Your focus buddy runs alongside you here, and naps on the block page when you step past a distraction. Keep focusing to earn XP and unlock the rest.</p>
       </section>
