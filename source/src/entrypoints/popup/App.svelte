@@ -730,19 +730,27 @@
 
   .add {
     flex: none;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
     border: 0;
-    background: transparent;
-    color: var(--ink-soft);
+    border-radius: 50%;
+    background: var(--accent-tint);
+    color: var(--accent-deep);
     font: inherit;
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 18px;
+    font-weight: 800;
     line-height: 1;
+    padding: 0;
     cursor: pointer;
-    padding: 0 1px;
-    transition: transform 0.15s ease, color 0.15s ease;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
   }
-  .add:hover { color: var(--accent); }
-  .add.open { transform: rotate(45deg); color: var(--ink-faint); }
+  .add:hover { background: var(--accent); color: var(--on-accent, #fff); }
+  .add:active { transform: scale(0.92); }
+  .add.open { transform: rotate(45deg); }
+  .add.open:active { transform: rotate(45deg) scale(0.92); }
   .parked-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
   .parked-list li {
     display: flex;
