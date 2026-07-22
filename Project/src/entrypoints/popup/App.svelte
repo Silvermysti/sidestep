@@ -1106,8 +1106,8 @@
     border-radius: 999px;
     transition: width 0.3s ease;
   }
-  .mbar-fill.tm { background: #5f97b8; }
-  .mbar-fill.xp { background: #e8a838; }
+  .mbar-fill.tm { background: var(--bar-time); }
+  .mbar-fill.xp { background: var(--bar-xp); }
   @media (prefers-reduced-motion: reduce) {
     .mbar-fill { transition: none; }
   }

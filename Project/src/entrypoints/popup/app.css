@@ -45,6 +45,8 @@
   --accent: #55A03D;
   --accent-deep: #3A7328;
   --accent-tint: #DCEDC6;
+  --bar-time: #4F93C4;     /* garden sky blue */
+  --bar-xp: #E3A11F;       /* sunflower gold */
 }
 :root[data-mode="break"] {   /* Meadow break — warm honey rest */
   --accent: #C68F3C;
@@ -68,6 +70,8 @@
   --accent: #D8712A;
   --accent-deep: #A34816;
   --accent-tint: #F7DFBF;
+  --bar-time: #4C9088;     /* teal foil to the warm scene */
+  --bar-xp: #E89F24;       /* harvest gold */
 }
 :root[data-theme="autumn"][data-mode="break"] {   /* muted brick-red rest */
   --accent: #BA5A44;
@@ -91,6 +95,8 @@
   --accent: #5B9AD1;
   --accent-deep: #A6CFF0;  /* LIGHT on dark — reads as accent text/labels */
   --accent-tint: #2C4257;  /* dark-blue pill behind that light text */
+  --bar-time: #59B4DB;     /* bright rain-cyan, pops on dark */
+  --bar-xp: #F0B84C;       /* warm lantern gold in the rain */
 }
 :root[data-theme="rainy"][data-mode="break"] {   /* soft teal rest */
   --accent: #5E9F9B;
