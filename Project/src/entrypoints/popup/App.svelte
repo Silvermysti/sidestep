@@ -130,9 +130,9 @@
   // strip. `tile` is that strip's exact pixel width, fed to the grass so the loop
   // lines up; `dot` is the colour of its picker circle.
   const THEMES = {
-    meadow: { label: 'Meadow', bg: 'url(/scene/background.png)', grass: '/scene/grass.png', tile: 1571, dot: '#d6d6d6' },
-    autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 1459, dot: '#8f8f8f', pos: 'center 100%', zoom: '125%' },
-    rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1743, dot: '#454545', zoom: '133%', pos: 'center 75%', grassBottom: '0%', grassHeight: '62%' },
+    meadow: { label: 'Meadow', bg: 'url(/scene/background.png)', grass: '/scene/grass.png', tile: 1571, dot: '#3A8A60' },
+    autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 1459, dot: '#B85C38', pos: 'center 100%', zoom: '125%' },
+    rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1743, dot: '#6E90C4', zoom: '133%', pos: 'center 75%', grassBottom: '0%', grassHeight: '62%' },
   };
   const THEME_KEYS = Object.keys(THEMES);
   let theme = $derived(s?.theme && THEMES[s.theme] ? s.theme : 'meadow');

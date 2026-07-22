@@ -31,87 +31,87 @@
      than the controls inside them) so every element reads on its own, like a
      game HUD. `--accent-deep` is "readable accent text"; `--edge` is the drawn
      panel border. The accent also warms a touch on breaks (data-mode). */
-  /* NEUTRAL SLATE — all hue stripped out on purpose. Colour will be rebuilt from
-     here deliberately. The three themes are kept as pure LIGHT / MEDIUM / DARK
-     greyscales; `--accent` is a neutral charcoal so buttons/labels still have
-     contrast without any colour. */
-  --bg: #E8E8E8;            /* light-grey page */
-  --bg-hi: #F8F8F8;
+  /* THREE VIBES — refined & restrained. Each theme keeps a MOSTLY-NEUTRAL,
+     lightly-tinted base so one confident accent carries the identity (boldness
+     spent on the accent + the framed habitat, not by flooding every panel).
+     Meadow = FRESH DAYLIGHT: cool paper-white, botanical forest-green accent. */
+  --bg: #EBEEE9;
+  --bg-hi: #F7F9F5;
   --surface: #FFFFFF;
-  --surface-2: #F0F0F0;
-  --surface-3: #E5E5E5;
-  --line: #D7D7D7;
-  --edge: #CBCBCB;
-  --outline: #2A2A2A;
+  --surface-2: #EFF2ED;
+  --surface-3: #E6EAE3;
+  --line: #DBDFD7;
+  --edge: #C6CDC0;
+  --outline: #2A322A;
   --panel-hi: rgba(255, 255, 255, 0.9);
   --glow: transparent;
-  --ink: #1E1E1E;
-  --ink-soft: #696969;
-  --ink-faint: #9A9A9A;
-  --accent: #3A3A3A;        /* neutral charcoal "accent" */
-  --accent-deep: #1E1E1E;
-  --accent-tint: #EAEAEA;
-  --bar-time: #8C8C8C;      /* two greys, told apart by value */
-  --bar-xp: #464646;
+  --ink: #232823;
+  --ink-soft: #5E655C;
+  --ink-faint: #969C92;
+  --accent: #3A8A60;        /* forest / fern green */
+  --accent-deep: #2A6746;
+  --accent-tint: #E1EEE7;
+  --bar-time: #6E93AE;      /* calm slate-blue */
+  --bar-xp: #3A8A60;        /* green — XP is growth */
 }
-:root[data-mode="break"] {   /* Meadow break — a lighter neutral */
-  --accent: #585858;
-  --accent-deep: #1E1E1E;
-  --accent-tint: #E4E4E4;
+:root[data-mode="break"] {   /* Meadow break — warm honey rest */
+  --accent: #A0742C;
+  --accent-deep: #6E4E17;
+  --accent-tint: #EDE3CE;
 }
 
-/* ── Autumn · MEDIUM — mid-grey neutral ──────────────────────────────────── */
+/* ── Autumn · MEDIUM — COZY WARM: mushroom-greige base, burnt-clay accent ──── */
 :root[data-theme="autumn"] {
-  --bg: #9C9C9C;
-  --bg-hi: #B6B6B6;
-  --surface: #EDEDED;
-  --surface-2: #DCDCDC;
-  --surface-3: #CECECE;
-  --line: #C0C0C0;
-  --edge: #979797;
-  --outline: #202020;
-  --panel-hi: rgba(255, 255, 255, 0.7);
+  --bg: #C9BDB0;
+  --bg-hi: #DAD0C4;
+  --surface: #F3EDE4;
+  --surface-2: #E7DED1;
+  --surface-3: #DCD1C1;
+  --line: #D0C4B4;
+  --edge: #B3A491;
+  --outline: #322620;
+  --panel-hi: rgba(255, 252, 246, 0.85);
   --glow: transparent;
-  --ink: #202020;
-  --ink-soft: #545454;
-  --ink-faint: #7A7A7A;
-  --accent: #333333;
-  --accent-deep: #151515;
-  --accent-tint: #D6D6D6;
-  --bar-time: #6F6F6F;
-  --bar-xp: #3A3A3A;
+  --ink: #33261E;
+  --ink-soft: #6B5A4C;
+  --ink-faint: #9A8676;
+  --accent: #B85C38;        /* burnt clay / rust */
+  --accent-deep: #8C3E22;
+  --accent-tint: #EEDDCF;
+  --bar-time: #5E8378;      /* muted eucalyptus foil */
+  --bar-xp: #C6923E;        /* harvest ochre */
 }
-:root[data-theme="autumn"][data-mode="break"] {
-  --accent: #565656;
-  --accent-deep: #151515;
-  --accent-tint: #D0D0D0;
+:root[data-theme="autumn"][data-mode="break"] {   /* dusty rose rest */
+  --accent: #9E5A4E;
+  --accent-deep: #6E382E;
+  --accent-tint: #E8D6CD;
 }
 
-/* ── Rainy · DARK — dark-grey neutral ────────────────────────────────────── */
+/* ── Rainy · DARK — CALM NIGHT: navy-slate, soft steel-blue, muted gold ────── */
 :root[data-theme="rainy"] {
-  --bg: #191919;
-  --bg-hi: #2A2A2A;
-  --surface: #2E2E2E;
-  --surface-2: #232323;
-  --surface-3: #383838;
-  --line: #3C3C3C;
-  --edge: #565656;
-  --outline: #0B0B0B;
-  --panel-hi: rgba(255, 255, 255, 0.10);
+  --bg: #1C2029;
+  --bg-hi: #262C38;
+  --surface: #2A303B;
+  --surface-2: #22272F;
+  --surface-3: #333A47;
+  --line: #3A414E;
+  --edge: #4C5568;
+  --outline: #0D0F14;
+  --panel-hi: rgba(180, 195, 225, 0.10);
   --glow: transparent;
-  --ink: #F0F0F0;
-  --ink-soft: #ABABAB;
-  --ink-faint: #6C6C6C;
-  --accent: #575757;        /* mid-grey button — white label still reads on it */
-  --accent-deep: #E6E6E6;   /* light text/label on dark */
-  --accent-tint: #333333;
-  --bar-time: #8E8E8E;
-  --bar-xp: #DADADA;
+  --ink: #E6E9F0;
+  --ink-soft: #A3A9B8;
+  --ink-faint: #6B7183;
+  --accent: #4E6FA0;        /* calm steel-blue (white label reads on it) */
+  --accent-deep: #AFC4E4;   /* light label/text on dark */
+  --accent-tint: #2C3546;
+  --bar-time: #6E90C4;      /* periwinkle */
+  --bar-xp: #C2A15A;        /* muted gold — a warm light in the rain */
 }
-:root[data-theme="rainy"][data-mode="break"] {
-  --accent: #616161;
-  --accent-deep: #E6E6E6;
-  --accent-tint: #303030;
+:root[data-theme="rainy"][data-mode="break"] {   /* muted teal rest */
+  --accent: #4E7C78;
+  --accent-deep: #A9D0CB;
+  --accent-tint: #26383A;
 }
 
 * { box-sizing: border-box; }
