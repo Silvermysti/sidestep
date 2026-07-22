@@ -31,83 +31,87 @@
      than the controls inside them) so every element reads on its own, like a
      game HUD. `--accent-deep` is "readable accent text"; `--edge` is the drawn
      panel border. The accent also warms a touch on breaks (data-mode). */
-  --bg: #C7E39F;            /* vivid spring meadow — white panels pop hard on it */
-  --bg-hi: #F4FCE3;         /* bright morning-sky glow up top */
-  --surface: #FFFFFF;       /* crisp game panels */
-  --surface-2: #ECF6D9;     /* grassy control wells */
-  --surface-3: #DFEFC3;
-  --line: #C0DB93;
-  --edge: #8FC154;          /* vivid grass panel edge */
-  --outline: #2A3D17;
-  --panel-hi: rgba(255, 255, 255, 0.9);   /* top sheen on panels */
-  --glow: transparent;                    /* light theme needs no glow */
-  --ink: #22380F;
-  --ink-soft: #4C6A2E;
-  --ink-faint: #83A15C;
-  --accent: #4CA827;        /* vivid grass green */
-  --accent-deep: #2C7A14;
-  --accent-tint: #DAF0BD;
-  --bar-time: #3E9DD8;      /* bright spring sky */
-  --bar-xp: #F2A81C;        /* sunflower */
-}
-:root[data-mode="break"] {   /* Meadow break — golden honey rest */
-  --accent: #E29A26;
-  --accent-deep: #A5670F;
-  --accent-tint: #F7E7C2;
-}
-
-/* ── Autumn · MEDIUM — golden-hour hearth: deep amber page, glowing panels ── */
-:root[data-theme="autumn"] {
-  --bg: #A85A29;            /* deep burnt-caramel dusk — its own warm world */
-  --bg-hi: #DA8B42;         /* firelight glow up top */
-  --surface: #F8E5C3;       /* toasted-cream panels glow on the amber page */
-  --surface-2: #F0D3A4;
-  --surface-3: #E7C288;
-  --line: #D9AC71;
-  --edge: #AF6829;          /* strong toasted edge */
-  --outline: #38200E;
-  --panel-hi: rgba(255, 250, 236, 0.85);
+  /* NEUTRAL SLATE — all hue stripped out on purpose. Colour will be rebuilt from
+     here deliberately. The three themes are kept as pure LIGHT / MEDIUM / DARK
+     greyscales; `--accent` is a neutral charcoal so buttons/labels still have
+     contrast without any colour. */
+  --bg: #E8E8E8;            /* light-grey page */
+  --bg-hi: #F8F8F8;
+  --surface: #FFFFFF;
+  --surface-2: #F0F0F0;
+  --surface-3: #E5E5E5;
+  --line: #D7D7D7;
+  --edge: #CBCBCB;
+  --outline: #2A2A2A;
+  --panel-hi: rgba(255, 255, 255, 0.9);
   --glow: transparent;
-  --ink: #38200E;           /* espresso */
-  --ink-soft: #6E4824;
-  --ink-faint: #9A7240;
-  --accent: #E15E1F;        /* ember / pumpkin */
-  --accent-deep: #A9380B;
-  --accent-tint: #F8DBBB;
-  --bar-time: #3C8F86;      /* teal foil to all the warmth */
-  --bar-xp: #EFA724;        /* harvest gold */
+  --ink: #1E1E1E;
+  --ink-soft: #696969;
+  --ink-faint: #9A9A9A;
+  --accent: #3A3A3A;        /* neutral charcoal "accent" */
+  --accent-deep: #1E1E1E;
+  --accent-tint: #EAEAEA;
+  --bar-time: #8C8C8C;      /* two greys, told apart by value */
+  --bar-xp: #464646;
 }
-:root[data-theme="autumn"][data-mode="break"] {   /* ember-red rest */
-  --accent: #C4483A;
-  --accent-deep: #8E2A1E;
-  --accent-tint: #F3D2C4;
+:root[data-mode="break"] {   /* Meadow break — a lighter neutral */
+  --accent: #585858;
+  --accent-deep: #1E1E1E;
+  --accent-tint: #E4E4E4;
 }
 
-/* ── Rainy · DARK — midnight rain: deep indigo, luminous cyan, lantern gold ── */
-:root[data-theme="rainy"] {
-  --bg: #161D2E;           /* deep indigo night */
-  --bg-hi: #27324D;        /* cool city/moon glow up top */
-  --surface: #29344D;      /* panels lift above the night */
-  --surface-2: #1F2840;    /* wells sink into shadow */
-  --surface-3: #323E5B;
-  --line: #384663;
-  --edge: #4E6493;         /* cool luminous slate edge */
-  --outline: #0C111E;
-  --panel-hi: rgba(130, 160, 210, 0.14);  /* faint cool top sheen */
-  --glow: rgba(70, 182, 230, 0.38);        /* rain-cyan glow for accents */
-  --ink: #E9EEFB;          /* moonlight */
-  --ink-soft: #A7B4D2;
-  --ink-faint: #6E7CA2;
-  --accent: #46B6E6;       /* luminous rain-cyan */
-  --accent-deep: #93DBF7;  /* light glow-text on dark */
-  --accent-tint: #233A57;  /* deep pill behind it */
-  --bar-time: #4FC2ED;     /* bright rain-cyan */
-  --bar-xp: #F2B84E;       /* warm lantern gold — a lit window in the rain */
+/* ── Autumn · MEDIUM — mid-grey neutral ──────────────────────────────────── */
+:root[data-theme="autumn"] {
+  --bg: #9C9C9C;
+  --bg-hi: #B6B6B6;
+  --surface: #EDEDED;
+  --surface-2: #DCDCDC;
+  --surface-3: #CECECE;
+  --line: #C0C0C0;
+  --edge: #979797;
+  --outline: #202020;
+  --panel-hi: rgba(255, 255, 255, 0.7);
+  --glow: transparent;
+  --ink: #202020;
+  --ink-soft: #545454;
+  --ink-faint: #7A7A7A;
+  --accent: #333333;
+  --accent-deep: #151515;
+  --accent-tint: #D6D6D6;
+  --bar-time: #6F6F6F;
+  --bar-xp: #3A3A3A;
 }
-:root[data-theme="rainy"][data-mode="break"] {   /* calm teal rest */
-  --accent: #4FB3A6;
-  --accent-deep: #9AE0D4;
-  --accent-tint: #22403C;
+:root[data-theme="autumn"][data-mode="break"] {
+  --accent: #565656;
+  --accent-deep: #151515;
+  --accent-tint: #D0D0D0;
+}
+
+/* ── Rainy · DARK — dark-grey neutral ────────────────────────────────────── */
+:root[data-theme="rainy"] {
+  --bg: #191919;
+  --bg-hi: #2A2A2A;
+  --surface: #2E2E2E;
+  --surface-2: #232323;
+  --surface-3: #383838;
+  --line: #3C3C3C;
+  --edge: #565656;
+  --outline: #0B0B0B;
+  --panel-hi: rgba(255, 255, 255, 0.10);
+  --glow: transparent;
+  --ink: #F0F0F0;
+  --ink-soft: #ABABAB;
+  --ink-faint: #6C6C6C;
+  --accent: #575757;        /* mid-grey button — white label still reads on it */
+  --accent-deep: #E6E6E6;   /* light text/label on dark */
+  --accent-tint: #333333;
+  --bar-time: #8E8E8E;
+  --bar-xp: #DADADA;
+}
+:root[data-theme="rainy"][data-mode="break"] {
+  --accent: #616161;
+  --accent-deep: #E6E6E6;
+  --accent-tint: #303030;
 }
 
 * { box-sizing: border-box; }
