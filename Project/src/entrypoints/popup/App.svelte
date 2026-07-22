@@ -132,7 +132,7 @@
   const THEMES = {
     meadow: { label: 'Meadow', bg: 'url(/scene/background.png)', grass: '/scene/grass.png', tile: 1571, dot: '#7fb43f' },
     autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 1459, dot: '#d5852f', pos: 'center 100%', zoom: '125%' },
-    rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1743, dot: '#6d88a8', zoom: '130%', pos: 'center 75%', grassBottom: '0%', grassHeight: '62%' },
+    rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1743, dot: '#6d88a8', zoom: '133%', pos: 'center 75%', grassBottom: '0%', grassHeight: '62%' },
   };
   const THEME_KEYS = Object.keys(THEMES);
   let theme = $derived(s?.theme && THEMES[s.theme] ? s.theme : 'meadow');
