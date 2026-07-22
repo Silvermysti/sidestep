@@ -31,87 +31,101 @@
      than the controls inside them) so every element reads on its own, like a
      game HUD. `--accent-deep` is "readable accent text"; `--edge` is the drawn
      panel border. The accent also warms a touch on breaks (data-mode). */
-  /* THREE VIBES — refined & restrained. Each theme keeps a MOSTLY-NEUTRAL,
-     lightly-tinted base so one confident accent carries the identity (boldness
-     spent on the accent + the framed habitat, not by flooding every panel).
-     Meadow = FRESH DAYLIGHT: cool paper-white, botanical forest-green accent. */
-  --bg: #EBEEE9;
-  --bg-hi: #F7F9F5;
+  /* SOFT POP — soft, aesthetic pastels with real contrast BETWEEN elements: the
+     button (--accent), the two bars (--bar-time / --bar-xp) and the tags (--chip)
+     each carry a different soft hue. Buttons use a soft pastel fill with a deep
+     same-tone label (--on-accent) so they stay soft AND readable, instead of
+     white-on-pastel. Meadow = soft sage & peach. */
+  --bg: #EFF3EC;
+  --bg-hi: #F7FAF3;
   --surface: #FFFFFF;
-  --surface-2: #EFF2ED;
-  --surface-3: #E6EAE3;
-  --line: #DBDFD7;
-  --edge: #C6CDC0;
-  --outline: #2A322A;
+  --surface-2: #EBF1E6;
+  --surface-3: #E2EADB;
+  --line: #E1E9DB;
+  --edge: #D6E2CF;
+  --outline: #33402C;
   --panel-hi: rgba(255, 255, 255, 0.9);
   --glow: transparent;
-  --ink: #232823;
-  --ink-soft: #5E655C;
-  --ink-faint: #969C92;
-  --accent: #3A8A60;        /* forest / fern green */
-  --accent-deep: #2A6746;
-  --accent-tint: #E1EEE7;
-  --bar-time: #6E93AE;      /* calm slate-blue */
-  --bar-xp: #3A8A60;        /* green — XP is growth */
+  --ink: #3C4A3B;
+  --ink-soft: #7C8779;
+  --ink-faint: #A9B2A2;
+  --accent: #F0A88F;        /* soft peach button */
+  --on-accent: #7E3A28;     /* deep tonal label ON the button */
+  --accent-deep: #C86A4E;   /* accent text / section labels / active tab */
+  --accent-tint: #FBE7DE;
+  --bar-time: #8FBFDD;      /* powder blue */
+  --bar-xp: #8CC98C;        /* soft sage — XP is growth */
+  --chip: #F4DA95;          /* butter tag */
+  --chip-ink: #6F5620;
 }
-:root[data-mode="break"] {   /* Meadow break — warm honey rest */
-  --accent: #A0742C;
-  --accent-deep: #6E4E17;
-  --accent-tint: #EDE3CE;
+:root[data-mode="break"] {   /* Meadow break — soft honey rest */
+  --accent: #EFC98C;
+  --on-accent: #6E4E17;
+  --accent-deep: #B0803A;
+  --accent-tint: #F7ECD6;
 }
 
-/* ── Autumn · MEDIUM — COZY WARM: mushroom-greige base, burnt-clay accent ──── */
+/* ── Autumn — Apricot: soft peachy-cream; terracotta / teal / gold / rose ──── */
 :root[data-theme="autumn"] {
-  --bg: #C9BDB0;
-  --bg-hi: #DAD0C4;
-  --surface: #F3EDE4;
-  --surface-2: #E7DED1;
-  --surface-3: #DCD1C1;
-  --line: #D0C4B4;
-  --edge: #B3A491;
-  --outline: #322620;
-  --panel-hi: rgba(255, 252, 246, 0.85);
+  --bg: #F8E7CE;
+  --bg-hi: #FDF3E2;
+  --surface: #FFFCF6;
+  --surface-2: #F4DEC1;
+  --surface-3: #EDD4B2;
+  --line: #EEDCC2;
+  --edge: #E3CBA9;
+  --outline: #4A3320;
+  --panel-hi: rgba(255, 252, 246, 0.9);
   --glow: transparent;
-  --ink: #33261E;
-  --ink-soft: #6B5A4C;
-  --ink-faint: #9A8676;
-  --accent: #B85C38;        /* burnt clay / rust */
-  --accent-deep: #8C3E22;
-  --accent-tint: #EEDDCF;
-  --bar-time: #5E8378;      /* muted eucalyptus foil */
-  --bar-xp: #C6923E;        /* harvest ochre */
+  --ink: #4A3A2C;
+  --ink-soft: #8A7560;
+  --ink-faint: #B39C82;
+  --accent: #E7A184;        /* soft terracotta */
+  --on-accent: #7C3A26;
+  --accent-deep: #B85E3E;
+  --accent-tint: #F6DFCF;
+  --bar-time: #8FC0B6;      /* dusty teal */
+  --bar-xp: #F0C079;        /* soft gold */
+  --chip: #E4AAB1;          /* rose tag */
+  --chip-ink: #7E3F48;
 }
 :root[data-theme="autumn"][data-mode="break"] {   /* dusty rose rest */
-  --accent: #9E5A4E;
-  --accent-deep: #6E382E;
-  --accent-tint: #E8D6CD;
+  --accent: #D99A8E;
+  --on-accent: #6E362B;
+  --accent-deep: #9E5A4E;
+  --accent-tint: #F1DACF;
 }
 
-/* ── Rainy · DARK — CALM NIGHT: navy-slate, soft steel-blue, muted gold ────── */
+/* ── Rainy — soft periwinkle night (dark); aqua / peach bars, lilac tag ────── */
 :root[data-theme="rainy"] {
-  --bg: #1C2029;
-  --bg-hi: #262C38;
-  --surface: #2A303B;
-  --surface-2: #22272F;
-  --surface-3: #333A47;
-  --line: #3A414E;
-  --edge: #4C5568;
-  --outline: #0D0F14;
-  --panel-hi: rgba(180, 195, 225, 0.10);
-  --glow: transparent;
-  --ink: #E6E9F0;
-  --ink-soft: #A3A9B8;
-  --ink-faint: #6B7183;
-  --accent: #4E6FA0;        /* calm steel-blue (white label reads on it) */
-  --accent-deep: #AFC4E4;   /* light label/text on dark */
-  --accent-tint: #2C3546;
-  --bar-time: #6E90C4;      /* periwinkle */
-  --bar-xp: #C2A15A;        /* muted gold — a warm light in the rain */
+  --bg: #272B3B;
+  --bg-hi: #313650;
+  --surface: #323752;
+  --surface-2: #272C40;
+  --surface-3: #3B4162;
+  --line: #3E4568;
+  --edge: #4C5378;
+  --outline: #171A28;
+  --panel-hi: rgba(160, 170, 220, 0.12);
+  --glow: rgba(157, 166, 238, 0.40);
+  --ink: #E7E9F2;
+  --ink-soft: #A8ABC0;
+  --ink-faint: #74789A;
+  --accent: #9DA6EE;        /* soft periwinkle button */
+  --on-accent: #2A2E52;     /* deep label on periwinkle */
+  --accent-deep: #B4BBF5;   /* light on dark — labels/text */
+  --accent-tint: #333A5C;
+  --bar-time: #84C6D9;      /* soft aqua */
+  --bar-xp: #F0B58A;        /* soft peach — a warm light in the rain */
+  --chip: #D3A2CE;          /* lilac tag */
+  --chip-ink: #46284A;
 }
-:root[data-theme="rainy"][data-mode="break"] {   /* muted teal rest */
-  --accent: #4E7C78;
-  --accent-deep: #A9D0CB;
-  --accent-tint: #26383A;
+:root[data-theme="rainy"][data-mode="break"] {   /* soft teal rest */
+  --accent: #8FC7C0;
+  --on-accent: #234440;
+  --accent-deep: #A9DAD3;
+  --accent-tint: #2A4340;
+  --glow: rgba(143, 199, 192, 0.35);
 }
 
 * { box-sizing: border-box; }

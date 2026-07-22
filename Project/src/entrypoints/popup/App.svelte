@@ -130,9 +130,9 @@
   // strip. `tile` is that strip's exact pixel width, fed to the grass so the loop
   // lines up; `dot` is the colour of its picker circle.
   const THEMES = {
-    meadow: { label: 'Meadow', bg: 'url(/scene/background.png)', grass: '/scene/grass.png', tile: 1571, dot: '#3A8A60' },
-    autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 1459, dot: '#B85C38', pos: 'center 100%', zoom: '125%' },
-    rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1743, dot: '#6E90C4', zoom: '133%', pos: 'center 75%', grassBottom: '0%', grassHeight: '62%' },
+    meadow: { label: 'Meadow', bg: 'url(/scene/background.png)', grass: '/scene/grass.png', tile: 1571, dot: '#8CC98C' },
+    autumn: { label: 'Autumn', bg: 'url(/scene/autumn-bg.png)', grass: '/scene/autumn-grass.png', tile: 1459, dot: '#E7A184', pos: 'center 100%', zoom: '125%' },
+    rainy: { label: 'Rainy', bg: 'url(/scene/rainy-bg.png)', grass: '/scene/rainy-grass.png', tile: 1743, dot: '#9DA6EE', zoom: '133%', pos: 'center 75%', grassBottom: '0%', grassHeight: '62%' },
   };
   const THEME_KEYS = Object.keys(THEMES);
   let theme = $derived(s?.theme && THEMES[s.theme] ? s.theme : 'meadow');
@@ -787,11 +787,10 @@
     width: 17px;
     height: 17px;
     padding: 0;
-    border: 2px solid var(--outline); /* chunky pixel-art outline */
+    border: 2px solid var(--surface);
     border-radius: 50%;
     background: var(--dot);
-    box-shadow: 0 2px 0 rgba(59, 46, 31, 0.28); /* small offset, like a sticker */
-    image-rendering: pixelated;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22); /* soft lift */
     cursor: pointer;
     transition: transform 0.1s ease;
   }
@@ -832,7 +831,7 @@
   /* Cards (Lists / Blocked / Settings) */
   .card {
     background: var(--surface);
-    border: 2px solid var(--edge);
+    border: 1.5px solid var(--edge);
     border-radius: var(--r-lg);
     /* Beveled game-panel: a bright top sheen inside, the hard drop below. */
     box-shadow: inset 0 1.5px 0 var(--panel-hi, transparent), var(--shadow);
@@ -876,7 +875,7 @@
     width: 100%;
     aspect-ratio: 4 / 5;
     border-radius: var(--r-lg);
-    border: 2px solid var(--edge);
+    border: 1.5px solid var(--edge);
     /* Scene backdrop — swapped per theme via --habitat-bg; --habitat-size zooms a
        theme past cover (rainy) and --habitat-pos nudges its framing (autumn).
        Falls back to the meadow, centred at cover. */
@@ -975,7 +974,7 @@
   /* Parked thoughts — the "for later" list, filled from the redirect page */
   .parked {
     background: var(--surface);
-    border: 2px solid var(--edge);
+    border: 1.5px solid var(--edge);
     border-radius: var(--r-lg);
     box-shadow: inset 0 1.5px 0 var(--panel-hi, transparent), var(--shadow);
     padding: 13px 14px;
@@ -1113,11 +1112,11 @@
     font-variant-numeric: tabular-nums;
   }
   .mbar-track {
-    height: 11px;
+    height: 12px;
     border-radius: 999px;
     background: var(--surface-2);
-    border: 2px solid var(--outline); /* same chunky outline as the theme dots */
-    box-shadow: 0 2px 0 rgba(59, 46, 31, 0.28);
+    border: 1px solid var(--line);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
     overflow: hidden;
     transition: background-color 0.35s ease, border-color 0.35s ease;
   }
@@ -1151,7 +1150,7 @@
   }
   .primary {
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent, #fff);
     /* The bottom lip is the accent darkened, so it reads as a shadow in every
        theme (independent of --accent-deep, which flips light in dark mode). */
     border-color: color-mix(in srgb, var(--accent) 58%, #000);
@@ -1267,12 +1266,13 @@
   .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {
     display: flex; align-items: center; gap: 3px;
-    background: var(--surface-2);
-    border: 1px solid var(--line);
+    background: var(--chip, var(--surface-2));
     border-radius: 999px;
     padding: 5px 7px 5px 12px;
-    font-size: 12.5px; font-weight: 600; color: var(--ink);
+    font-size: 12.5px; font-weight: 700; color: var(--chip-ink, var(--ink));
   }
+  .chip .x { color: var(--chip-ink, var(--ink-faint)); opacity: 0.75; }
+  .chip .x:hover { opacity: 1; }
 
   .x {
     border: 0; background: transparent; color: var(--ink-faint);
