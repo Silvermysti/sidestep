@@ -1,0 +1,1 @@
+import"./_virtual_wxt-html-plugins-Dezn_h7o.js";var e=chrome.runtime.getURL(`/sounds/ding.mp3`);chrome.runtime.onMessage.addListener(t=>{if(t?.action!==`sidestep-play-ding`)return;let n=new Audio(e);n.volume=.7,n.play().catch(()=>{})});

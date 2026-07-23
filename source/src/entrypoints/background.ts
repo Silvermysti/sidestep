@@ -25,6 +25,7 @@ const BADGE_ALARM = 'sidestep-badge';
 
 const WAKE_GAP_MS = 2 * 60 * 1000;
 const XP_PER_MIN = 1;
+const XP_DECAY_PER_MIN = 0.25;
 
 const BADGE_FOCUS = '#2F7A4A';
 const BADGE_BREAK = '#B5722A';
@@ -269,11 +270,16 @@ async function applyProgress(elapsedMs: number) {
 
   const [p, t]: any = await Promise.all([progress.getValue(), timer.getValue()]);
   const focusing = t.status === 'running' && t.mode === 'focus';
-  if (!focusing) return;
+  const resting = t.status === 'running' && t.mode === 'break';
+  if (resting) return;
 
+  const mins = elapsedMs / 60000;
+  const rate = focusing ? XP_PER_MIN : -XP_DECAY_PER_MIN;
   const prevXp = p?.xp ?? 0;
-  const xp = prevXp + XP_PER_MIN * (elapsedMs / 60000);
+  const xp = Math.max(0, prevXp + rate * mins);
   await progress.setValue({ xp });
+
+  if (xp <= prevXp) return;
 
   const before = unlockedKeys(prevXp);
   for (const key of unlockedKeys(xp)) {
@@ -327,7 +333,34 @@ async function reconcile() {
   notify(finished, s, t);
 }
 
+let offscreenSetup: Promise<void> | null = null;
+
+async function playChime() {
+  const c: any = (globalThis as any).chrome;
+  if (!c?.offscreen) return;
+  try {
+    const has = await c.offscreen.hasDocument?.();
+    if (!has) {
+      if (!offscreenSetup) {
+        offscreenSetup = c.offscreen
+          .createDocument({
+            url: 'offscreen.html',
+            reasons: ['AUDIO_PLAYBACK'],
+            justification: 'Play a short chime when a focus or break session ends.',
+          })
+          .catch(() => {})
+          .finally(() => {
+            offscreenSetup = null;
+          });
+      }
+      await offscreenSetup;
+    }
+    await browser.runtime.sendMessage({ action: 'sidestep-play-ding' });
+  } catch {}
+}
+
 function notify(finished: any, s: any, next: any) {
+  playChime();
   const total = totalCycles(s);
   const rounds = total === Infinity ? '' : ` of ${total}`;
 

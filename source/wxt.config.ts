@@ -17,7 +17,7 @@ export default defineConfig({
       },
     },
 
-    permissions: ['storage', 'alarms', 'notifications', 'webNavigation', 'activeTab'],
+    permissions: ['storage', 'alarms', 'notifications', 'webNavigation', 'activeTab', 'offscreen'],
 
     web_accessible_resources: [
       {
