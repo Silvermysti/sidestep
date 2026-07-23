@@ -15,7 +15,7 @@ export const THEMES = {
     dot: '#E7A184',
     pos: 'center 100%',
     zoom: '125%',
-    unlockAt: 120,
+    unlockAt: 150,
   },
   rainy: {
     label: 'Rainy',
@@ -27,7 +27,7 @@ export const THEMES = {
     zoom: '133%',
     grassBottom: '0%',
     grassHeight: '62%',
-    unlockAt: 240,
+    unlockAt: 500,
   },
 };
 

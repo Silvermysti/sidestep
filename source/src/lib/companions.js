@@ -40,7 +40,7 @@ export const COMPANIONS = {
     width: 270,
     sleepW: 250,
     grassSpeed: 0.95,
-    unlockAt: 180,
+    unlockAt: 300,
   },
 };
 
